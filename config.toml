@@ -1,5 +1,14 @@
 base_url = "https://sekky89.github.io"
+title = "sekky89"
+description = "しがないエンジニアのメモ置場"
+author = "sekky89"
 compile_sass = true
+
+default_language = "en"
+generate_feeds = true
+feed_filenames = ["atom.xml"]
+taxonomies = [{ name = "tags", rss = true, paginate_by = 5 }]
+
 build_search_index = true
 theme = "kita"
 
@@ -9,7 +18,7 @@ extra_syntaxes_and_themes = []
 highlight_theme = "base16-ocean-dark"
 
 [extra]
-math = false
+math = true
 mermaid = true
 comment = false
 side_toc = true
