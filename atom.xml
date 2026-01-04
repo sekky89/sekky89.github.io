@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title>sekky89</title>
+    <subtitle>しがないエンジニアのメモ置場</subtitle>
+    <link rel="self" type="application/atom+xml" href="https://sekky89.github.io/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://sekky89.github.io"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2025-12-21T00:00:00+00:00</updated>
+    <id>https://sekky89.github.io/atom.xml</id>
+    <entry xml:lang="en">
+        <title>Zola 始めてみる</title>
+        <published>2025-12-21T00:00:00+00:00</published>
+        <updated>2025-12-21T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20251221-init-zola/"/>
+        <id>https://sekky89.github.io/20251221-init-zola/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20251221-init-zola/">&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;&quot;&gt;Zola&lt;&#x2F;a&gt; でページを作ってみました。&lt;br &#x2F;&gt;
+テーマは &lt;a href=&quot;https:&#x2F;&#x2F;github.com&#x2F;st1020&#x2F;kita&quot;&gt;kita&lt;&#x2F;a&gt; を使用しました。&lt;&#x2F;p&gt;
+&lt;p&gt;GitHub Actions Workflow の参考です。ほぼデフォルトで、gh-pages ブランチにビルド成果物が入り、それを公開しています。&lt;br &#x2F;&gt;
+なので、公開パスは &lt;code&gt;gh-pages&lt;&#x2F;code&gt; の &lt;code&gt;&#x2F;(root)&lt;&#x2F;code&gt; となります。GitHub で直接設定している箇所はそれ以外ありません。&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;yaml: gh-pages.yml&quot; style=&quot;background-color:#2b303b;color:#c0c5ce;&quot; class=&quot;language-yaml: gh-pages.yml &quot;&gt;&lt;code class=&quot;language-yaml: gh-pages.yml&quot; data-lang=&quot;yaml: gh-pages.yml&quot;&gt;&lt;span&gt;on: push
+&lt;&#x2F;span&gt;&lt;span&gt;name: Build and deploy GH Pages
+&lt;&#x2F;span&gt;&lt;span&gt;jobs:
+&lt;&#x2F;span&gt;&lt;span&gt;  build:
+&lt;&#x2F;span&gt;&lt;span&gt;    permissions:
+&lt;&#x2F;span&gt;&lt;span&gt;      contents: write
+&lt;&#x2F;span&gt;&lt;span&gt;    runs-on: ubuntu-latest
+&lt;&#x2F;span&gt;&lt;span&gt;    if: github.ref == &amp;#39;refs&#x2F;heads&#x2F;main&amp;#39;
+&lt;&#x2F;span&gt;&lt;span&gt;    steps:
+&lt;&#x2F;span&gt;&lt;span&gt;      - name: checkout
+&lt;&#x2F;span&gt;&lt;span&gt;        uses: actions&#x2F;checkout@v6
+&lt;&#x2F;span&gt;&lt;span&gt;        with:
+&lt;&#x2F;span&gt;&lt;span&gt;          submodules: true
+&lt;&#x2F;span&gt;&lt;span&gt;      - name: build_and_deploy
+&lt;&#x2F;span&gt;&lt;span&gt;        uses: shalzz&#x2F;zola-deploy-action@master
+&lt;&#x2F;span&gt;&lt;span&gt;        env:
+&lt;&#x2F;span&gt;&lt;span&gt;          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;設定を確かめて遊ぶ目的なので大した内容が増える見込みはありません。&lt;br &#x2F;&gt;
+メモ置場になる予定です。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>
