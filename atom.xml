@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title>sekky89</title>
+    <subtitle>しがないエンジニアのメモ置場</subtitle>
+    <link rel="self" type="application/atom+xml" href="https://sekky89.github.io/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://sekky89.github.io"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2026-01-31T00:00:00+00:00</updated>
+    <id>https://sekky89.github.io/atom.xml</id>
+    <entry xml:lang="en">
+        <title>go build の引数と docker マルチステージビルド</title>
+        <published>2026-01-31T00:00:00+00:00</published>
+        <updated>2026-01-31T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260131-go-build/"/>
+        <id>https://sekky89.github.io/20260131-go-build/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260131-go-build/">&lt;p&gt;いつも忘れる go build の引数。最近 Go やってないので久々に Go 書きたくなった。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;shellscript&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;GOARCH&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;arm64&lt;&#x2F;span&gt;&lt;span&gt; GOOS&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;linux&lt;&#x2F;span&gt;&lt;span&gt; CGO_ENABLED&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt; go&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; build -trimpath -ldflags=&amp;#39;-s -w&amp;#39; -o main main.go&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;main と main.go はお好みに書き換える。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;pointo&quot;&gt;ポイント&lt;&#x2F;h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;CGO_ENABLED=0&lt;&#x2F;code&gt; で静的リンクにする&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;-trimpath&lt;&#x2F;code&gt; はバイナリ内にビルド環境のパス情報が含まれることを抑止&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;-ldflags=&#x27;-s -w&#x27;&lt;&#x2F;code&gt; はシンボルテーブルとデバッグ情報を除外&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;本番用 Docker マルチステージビルドは以下。 AWS Lambda 用バイナリをビルドして scratch コンテナに投入している。&lt;br &#x2F;&gt;
+scratch をベースにするのは本番のランタイムに余計なものを一切入れたくないため。そのために &lt;code&gt;GO_ENABLED=0&lt;&#x2F;code&gt; でバイナリからランタイムへの依存を排除している。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;docker&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;FROM&lt;&#x2F;span&gt;&lt;span&gt; golang:1-alpine &lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;as&lt;&#x2F;span&gt;&lt;span&gt; builder&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;RUN&lt;&#x2F;span&gt;&lt;span&gt; apk update &amp;amp;&amp;amp; apk add --no-cache ca-certificates &amp;amp;&amp;amp; update-ca-certificates&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;WORKDIR&lt;&#x2F;span&gt;&lt;span&gt; &#x2F;app&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; . .&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;RUN&lt;&#x2F;span&gt;&lt;span&gt; GOARCH=arm64 GOOS=linux CGO_ENABLED=0 go build -trimpath -ldflags=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;-s -w&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt; -o .&#x2F;bootstrap .&#x2F;main.go&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;FROM&lt;&#x2F;span&gt;&lt;span&gt; scratch&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; --from=builder &#x2F;etc&#x2F;ssl&#x2F;certs&#x2F;ca-certificates.crt &#x2F;etc&#x2F;ssl&#x2F;certs&#x2F;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; --from=builder &#x2F;app&#x2F;bootstrap &#x2F;bootstrap&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; --from=public.ecr.aws&#x2F;awsguru&#x2F;aws-lambda-adapter:0.9.1 &#x2F;lambda-adapter &#x2F;opt&#x2F;extensions&#x2F;lambda-adapter&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;ENV&lt;&#x2F;span&gt;&lt;span&gt; PORT=8000&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;EXPOSE&lt;&#x2F;span&gt;&lt;span&gt; 8000&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;ENTRYPOINT&lt;&#x2F;span&gt;&lt;span&gt; [ &lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;&#x2F;bootstrap&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt; ]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;AWS Lambda Web Adapter も入っているので gin や fiber で作った API サーバをそのまま Lambda に上げられる。Lambda での運用が厳しかった場合は ECS に上げてもそのまま動く。多分。&lt;&#x2F;p&gt;
+&lt;p&gt;ビルドコンテキストが main.go の在処であれば改変不要でそのまま使用できる。はず。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>Zola 始めてみる</title>
+        <published>2025-12-21T00:00:00+00:00</published>
+        <updated>2025-12-21T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20251221-init-zola/"/>
+        <id>https://sekky89.github.io/20251221-init-zola/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20251221-init-zola/">&lt;p&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;&quot;&gt;Zola&lt;&#x2F;a&gt; でページを作ってみました。&lt;br &#x2F;&gt;
+テーマは &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;st1020&#x2F;kita&quot;&gt;kita&lt;&#x2F;a&gt; を使用しました。&lt;&#x2F;p&gt;
+&lt;p&gt;GitHub Actions Workflow の参考です。ほぼデフォルトで、gh-pages ブランチにビルド成果物が入り、それを公開しています。&lt;br &#x2F;&gt;
+なので、公開パスは &lt;code&gt;gh-pages&lt;&#x2F;code&gt; の &lt;code&gt;&#x2F;(root)&lt;&#x2F;code&gt; となります。GitHub で直接設定している箇所はそれ以外ありません。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;on: push&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;name: Build and deploy GH Pages&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;jobs:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  build:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    permissions:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      contents: write&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    runs-on: ubuntu-latest&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    if: github.ref == &amp;#39;refs&#x2F;heads&#x2F;main&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    steps:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      - name: checkout&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        uses: actions&#x2F;checkout@v6&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        with:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          submodules: true&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      - name: build_and_deploy&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        uses: shalzz&#x2F;zola-deploy-action@master&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        env:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          TOKEN: ${{ secrets.GITHUB_TOKEN }}&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;設定を確かめて遊ぶ目的なので大した内容が増える見込みはありません。&lt;br &#x2F;&gt;
+メモ置場になる予定です。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>
