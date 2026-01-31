@@ -16,7 +16,12 @@ theme = "kita"
 # extra_syntaxes_and_themes = []
 
 [markdown.highlighting]
-dark_theme = "base16-ocean-dark"
+error_on_missing_language = false
+style = "inline"
+theme = "base16-ocean-dark"
+
+extra_grammars = []
+extra_themes = []
 
 [extra]
 math = true
