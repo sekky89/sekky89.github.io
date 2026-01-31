@@ -13,9 +13,10 @@ build_search_index = true
 theme = "kita"
 
 [markdown]
-highlight_code = true
-extra_syntaxes_and_themes = []
-highlight_theme = "base16-ocean-dark"
+# extra_syntaxes_and_themes = []
+
+[markdown.highlighting]
+dark_theme = "base16-ocean-dark"
 
 [extra]
 math = true
@@ -64,4 +65,3 @@ url = "$BASE_URL/about"
 # since = 2020
 # license = "CC BY-SA 4.0"
 # license_url = "https://creativecommons.org/licenses/by-sa/4.0/deed"
-
