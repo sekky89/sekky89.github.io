@@ -1,17 +1,16 @@
 +++
-title = "neovim (alacritty) をあれこれ弄る（見た目編）"
+title = "neovim (alacritty) をあれこれ弄りつつ透明化する（見た目編）"
 date = "2026-02-15"
 description = "エディタの見た目は大事"
 [taxonomies]
 tags = ["editor", "neovim"]
 +++
 
-最近 VSCode が重くなることが多くストレス感じるため幾つか移行候補を考えつつ試してみている。  
-エンジニアとしての育ちが eclipse で、 vim 系エディタは最近触り始めたが思ったより快適なので Neovim はかなり良いと思う。  
-今のところ、 zed と neovim がかなり良い感じ。
+最近 VSCode が重くなることが多くストレス感じるため幾つか移行候補を考えつつ試してみている。エンジニアとしての育ちが eclipse で、 vim 系エディタは最近触り始めたが思ったより快適なので Neovim はかなり良いと思う。今のところ、 zed と neovim がかなり良い感じ。
 
-というわけでざっくり見た目設定。  
-あちこち None を設定しているのは透明化設定。
+ターミナルは [alacritty](https://alacritty.org/) を使用する。warp、wezterm も触ったがリッチすぎてターミナルアプリとしては TooMuch なので alacritty にした。
+
+というわけでざっくり見た目設定。あちこち None を設定しているのは透明化設定。
 
 ```lua: init.lua
 vim.cmd.colorscheme('catppuccin')
@@ -26,9 +25,7 @@ vim.api.nvim_set_hl(0, 'StatusLineFill', { bg = 'none' })
 vim.api.nvim_set_hl(0, 'BufferLineFill', { bg = 'none' })
 ```
 
-プラグインマネージャは lazy を使用。  
-`lua/plugins/colorscheme.lua` には以下を仕込んでいる。
-`catppuccin` の設定上も各所に透明化を仕込んでいる。
+プラグインマネージャは lazy を使用。`lua/plugins/colorscheme.lua` には以下を仕込んでいる。`catppuccin` の設定上も各所に透明化を仕込んでいる。
 
 ```lua: lua/plugins/colorscheme.lua
   {
@@ -45,7 +42,6 @@ vim.api.nvim_set_hl(0, 'BufferLineFill', { bg = 'none' })
 ```
 
 そのまま使用するとターミナルアプリの透明化設定がそのまま適用される。  
-ターミナルは [alacritty](https://alacritty.org/) を使用している。
 `alacritty.toml` はこんな感じ。blur はオフにしつつ opacity で良い感じに裏側の文字が邪魔にならない程度にうっすら透ける程度に設定。  
 ターミナルテーマまで catppuccin かよって感じだけど、個人的には背景色を黒にできれば割と何でもいい。
 

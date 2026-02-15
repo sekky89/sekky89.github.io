@@ -6,13 +6,11 @@ description = "エディタの見た目は大事"
 tags = ["editor", "zed"]
 +++
 
-エディタの見た目はテンションに直結するので良い感じにしたい。  
-メインのエディタとして使うかは分からないけど使ってみている zed の見た目を良い感じにするメモ。
+エディタの見た目はテンションに直結するので良い感じにしたい。メインのエディタとして使うかは分からないけど使ってみている zed の見た目を良い感じにするメモ。
 
 [参考 GitHub スレッド](https://github.com/zed-industries/zed/issues/5040#issuecomment-2510486980)
 
-個人的には `blurred` でぼかすよりも `transparent` で背景がうっすら透けて見える方が好き。  
-使用テーマにもよると思うが私のテーマはこれで大体透明になった。(なお、テーマは `Catppuccin Mocha` を使用)
+個人的には `blurred` でぼかすよりも `transparent` で背景がうっすら透けて見える方が好き。使用テーマにもよると思うが私のテーマはこれで大体透明になった。(なお、テーマは `Catppuccin Mocha` を使用)
 
 本当は [Deepdark Material Theme](https://marketplace.visualstudio.com/items?itemName=Nimda.deepdark-material) を zed に port したいが無かったのと、自力で port しようとしたがうまくいかなかったので。（シンタックスハイライトはこれが一番好き）
 
