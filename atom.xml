@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title>sekky89</title>
+    <subtitle>しがないエンジニアのメモ置場</subtitle>
+    <link rel="self" type="application/atom+xml" href="https://sekky89.github.io/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://sekky89.github.io"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2026-02-15T00:00:00+00:00</updated>
+    <id>https://sekky89.github.io/atom.xml</id>
+    <entry xml:lang="en">
+        <title>neovim (alacritty) をあれこれ弄りつつ透明化する（見た目編）</title>
+        <published>2026-02-15T00:00:00+00:00</published>
+        <updated>2026-02-15T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260215-nvim-awesome/"/>
+        <id>https://sekky89.github.io/20260215-nvim-awesome/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260215-nvim-awesome/">&lt;p&gt;最近 VSCode が重くなることが多くストレス感じるため幾つか移行候補を考えつつ試してみている。エンジニアとしての育ちが eclipse で、 vim 系エディタは最近触り始めたが思ったより快適なので Neovim はかなり良いと思う。今のところ、 zed と neovim がかなり良い感じ。&lt;&#x2F;p&gt;
+&lt;p&gt;ターミナルは &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;alacritty.org&#x2F;&quot;&gt;alacritty&lt;&#x2F;a&gt; を使用する。warp、wezterm も触ったがリッチすぎてターミナルアプリとしては TooMuch なので alacritty にした。&lt;&#x2F;p&gt;
+&lt;p&gt;というわけでざっくり見た目設定。あちこち None を設定しているのは透明化設定。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.cmd.colorscheme(&amp;#39;catppuccin&amp;#39;)&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;WinBar&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;WinBarNC&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;NeoTreeTabInactive&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;NeoTreeTabSeparatorInactive&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;StatusLine&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;StatusLineNC&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;StatusLineFill&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;BufferLineFill&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;プラグインマネージャは lazy を使用。&lt;code&gt;lua&#x2F;plugins&#x2F;colorscheme.lua&lt;&#x2F;code&gt; には以下を仕込んでいる。&lt;code&gt;catppuccin&lt;&#x2F;code&gt; の設定上も各所に透明化を仕込んでいる。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;#39;https:&#x2F;&#x2F;github.com&#x2F;catppuccin&#x2F;nvim.git&amp;#39;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    name = &amp;#39;catppuccin&amp;#39;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    priority = 1000,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    opts = {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      flavour = &amp;#39;mocha&amp;#39;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      transparent_background = true,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      float = { transparent = true, solid = true },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      auto_integrations = true,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;そのまま使用するとターミナルアプリの透明化設定がそのまま適用される。&lt;br &#x2F;&gt;
+&lt;code&gt;alacritty.toml&lt;&#x2F;code&gt; はこんな感じ。blur はオフにしつつ opacity で良い感じに裏側の文字が邪魔にならない程度にうっすら透ける程度に設定。&lt;br &#x2F;&gt;
+ターミナルテーマまで catppuccin かよって感じだけど、個人的には背景色を黒にできれば割と何でもいい。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[general]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;import = [&amp;quot;catppuccin.toml&amp;quot;]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;# import = [&amp;quot;gruvbox_material_hard_dark&amp;quot;]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;# import = [&amp;quot;gruvbox_dark&amp;quot;]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[window]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;dimensions = { columns = 180, lines = 58 }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;position = { x = 0, y = 1000 }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;padding = { x = 8, y = 4 }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;decorations = &amp;quot;Buttonless&amp;quot;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;opacity = 0.8&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;blur = false&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[scrolling]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;history = 100000&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[font]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;normal = { family = &amp;#39;HackGen35 Console NF&amp;#39;, style = &amp;quot;Regular&amp;quot; }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;bold = { family = &amp;quot;HackGen35 Console NF&amp;quot;, style = &amp;quot;Bold&amp;quot; }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;italic = { family = &amp;quot;HackGen35 Console NF&amp;quot;, style = &amp;quot;Italic&amp;quot; }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;bold_italic = { family = &amp;quot;HackGen35 Console NF&amp;quot;, style = &amp;quot;Bold Italic&amp;quot; }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;size = 12&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;offset = { x = 0, y = 2 }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;glyph_offset = { x = 0, y = 1 }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[colors]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[colors.primary]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;background = &amp;quot;#000000&amp;quot;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[selection]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;save_to_clipboard = true&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[mouse]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;hide_when_typing = true&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[debug]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>zed の見た目を良い感じにしつつ透明化する</title>
+        <published>2026-02-15T00:00:00+00:00</published>
+        <updated>2026-02-15T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260215-zed-transparency/"/>
+        <id>https://sekky89.github.io/20260215-zed-transparency/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260215-zed-transparency/">&lt;p&gt;エディタの見た目はテンションに直結するので良い感じにしたい。メインのエディタとして使うかは分からないけど使ってみている zed の見た目を良い感じにするメモ。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;zed-industries&#x2F;zed&#x2F;issues&#x2F;5040#issuecomment-2510486980&quot;&gt;参考 GitHub スレッド&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;個人的には &lt;code&gt;blurred&lt;&#x2F;code&gt; でぼかすよりも &lt;code&gt;transparent&lt;&#x2F;code&gt; で背景がうっすら透けて見える方が好き。使用テーマにもよると思うが私のテーマはこれで大体透明になった。(なお、テーマは &lt;code&gt;Catppuccin Mocha&lt;&#x2F;code&gt; を使用)&lt;&#x2F;p&gt;
+&lt;p&gt;本当は &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;marketplace.visualstudio.com&#x2F;items?itemName=Nimda.deepdark-material&quot;&gt;Deepdark Material Theme&lt;&#x2F;a&gt; を zed に port したいが無かったのと、自力で port しようとしたがうまくいかなかったので。（シンタックスハイライトはこれが一番好き）&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;{&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  ..., &#x2F;&#x2F; その他の設定&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;ui_font_weight&amp;quot;: 100.0,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;ui_font_family&amp;quot;: &amp;quot;HackGen35 Console NF&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;vim_mode&amp;quot;: true,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;icon_theme&amp;quot;: &amp;quot;Catppuccin Mocha&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;theme&amp;quot;: &amp;quot;Catppuccin Mocha&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;telemetry&amp;quot;: {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;metrics&amp;quot;: false,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;diagnostics&amp;quot;: false,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;buffer_font_family&amp;quot;: &amp;quot;HackGen35 Console NF&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;ui_font_size&amp;quot;: 14.0,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;buffer_font_size&amp;quot;: 14.0,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;experimental.theme_overrides&amp;quot;: {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;background.appearance&amp;quot;: &amp;quot;transparent&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;renamed.background&amp;quot;: &amp;quot;#FFFFFF20&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;search.match_background&amp;quot;: &amp;quot;#FFFFFF20&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;ghost_element.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;ghost_element.hover&amp;quot;: &amp;quot;#00000099&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;background&amp;quot;: &amp;quot;#000000CC&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.gutter.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;title_bar.background&amp;quot;: &amp;quot;#000000DF&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;toolbar.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;terminal.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;status_bar.background&amp;quot;: &amp;quot;#000000DF&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;tab.active_background&amp;quot;: &amp;quot;#000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;tab.inactive_background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;tab_bar.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;panel.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;border&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;border.variant&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.track.border&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.track.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.thumb.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.thumb.hover.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.thumb.active.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.thumb.border&amp;quot;: &amp;quot;#FFFFFF90&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.line_highlight&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.active_line.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.foreground&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.border&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.inactive.foreground&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.inactive.border&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.active.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.active.foreground&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.active.border&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.inactive.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;}&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>34インチワイドディスプレイを買ってみたが失敗した話(DELL AW3425DW)</title>
+        <published>2026-02-11T00:00:00+00:00</published>
+        <updated>2026-02-11T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260211-34-wide-display/"/>
+        <id>https://sekky89.github.io/20260211-34-wide-display/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260211-34-wide-display/">&lt;p&gt;ディスプレイ買ってみたけど用途と合わなかった話。&lt;&#x2F;p&gt;
+&lt;p&gt;意気込んで買ったのは&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;www.dell.com&#x2F;ja-jp&#x2F;shop&#x2F;alienware-34-240hz-qd-oled%E3%82%B2%E3%83%BC%E3%83%9F%E3%83%B3%E3%82%B0-%E3%83%A2%E3%83%8B%E3%82%BF%E3%83%BC-aw3425dw&#x2F;apd&#x2F;210-brpn&#x2F;%E3%83%A2%E3%83%8B%E3%82%BF%E3%83%BC-%E3%83%A2%E3%83%8B%E3%82%BF%E3%83%BC%E7%94%A8%E5%91%A8%E8%BE%BA%E6%A9%9F%E5%99%A8&quot;&gt;こちら&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;27インチ液晶が物足りなくなった &amp;amp; 仕事の Mac が M2 なので2ディスプレイ出力ができない。&lt;br &#x2F;&gt;
+たまにゲームもするし QD-OLED の大型買っちゃおうっていう安直な考え。正直衝動買いだった。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;he-gadamedatutaka&quot;&gt;何がダメだったか&lt;&#x2F;h2&gt;
+&lt;p&gt;このディスプレイは解像度 3440x1440 となっている。要するに縦解像度が 2k 相当。&lt;br &#x2F;&gt;
+Mac だとものすごく文字が滲む。コードエディタで文字が滲むのはただならぬストレス。&lt;br &#x2F;&gt;
+1日の大半が仕事でコードエディタを見ているのにこのストレスは耐えられない。&lt;&#x2F;p&gt;
+&lt;p&gt;Mac の場合、本体も高解像度ディスプレイに対してスケーリングして描画しているので表示が綺麗。&lt;br &#x2F;&gt;
+同様に外部ディスプレイにおいても、高解像度ディスプレイに対してスケーリングする分には比較的滲まずに綺麗に表示できる模様。&lt;&#x2F;p&gt;
+&lt;p&gt;現に、元々使ってた DELL の 4k 液晶ディスプレイは表示解像度 2k 相当で使用していたが滲んだことはない。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;liang-katutadian&quot;&gt;良かった点&lt;&#x2F;h2&gt;
+&lt;p&gt;黒が綺麗。当たり前だけど。映像は美しい。&lt;br &#x2F;&gt;
+あと、実感するほどゲームしてないけどゲームにおける反応速度が良いのは良いところ。&lt;br &#x2F;&gt;
+Windows だったら仕事でも困らなかったかもしれない。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;zong-gua&quot;&gt;総括&lt;&#x2F;h2&gt;
+&lt;p&gt;カタログスペックだけでディスプレイ買うのは良くないんだなと思いました。&lt;br &#x2F;&gt;
+こんなに文字滲むとは思わなかった。&lt;&#x2F;p&gt;
+&lt;p&gt;そういうストレス抱えたくない人は大人しく 4k 以上のディスプレイ買いましょう。懲りずに 32 インチ QD-OLED ディスプレイ買うか検討中。&lt;br &#x2F;&gt;
+高い勉強料だったが仕方ない。買い物下手だと金がいくらあっても足りん🫠&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>go build の引数と docker マルチステージビルド</title>
+        <published>2026-01-31T00:00:00+00:00</published>
+        <updated>2026-01-31T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260131-go-build/"/>
+        <id>https://sekky89.github.io/20260131-go-build/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260131-go-build/">&lt;p&gt;いつも忘れる go build の引数。最近 Go やってないので久々に Go 書きたくなった。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;shellscript&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;GOARCH&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;arm64&lt;&#x2F;span&gt;&lt;span&gt; GOOS&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;linux&lt;&#x2F;span&gt;&lt;span&gt; CGO_ENABLED&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt; go&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; build -trimpath -ldflags=&amp;#39;-s -w&amp;#39; -o main main.go&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;main と main.go はお好みに書き換える。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;pointo&quot;&gt;ポイント&lt;&#x2F;h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;CGO_ENABLED=0&lt;&#x2F;code&gt; で静的リンクにする&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;-trimpath&lt;&#x2F;code&gt; はバイナリ内にビルド環境のパス情報が含まれることを抑止&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;-ldflags=&#x27;-s -w&#x27;&lt;&#x2F;code&gt; はシンボルテーブルとデバッグ情報を除外&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;本番用 Docker マルチステージビルドは以下。 AWS Lambda 用バイナリをビルドして scratch コンテナに投入している。&lt;br &#x2F;&gt;
+scratch をベースにするのは本番のランタイムに余計なものを一切入れたくないため。そのために &lt;code&gt;GO_ENABLED=0&lt;&#x2F;code&gt; でバイナリからランタイムへの依存を排除している。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;docker&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;FROM&lt;&#x2F;span&gt;&lt;span&gt; golang:1-alpine &lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;as&lt;&#x2F;span&gt;&lt;span&gt; builder&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;RUN&lt;&#x2F;span&gt;&lt;span&gt; apk update &amp;amp;&amp;amp; apk add --no-cache ca-certificates &amp;amp;&amp;amp; update-ca-certificates&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;WORKDIR&lt;&#x2F;span&gt;&lt;span&gt; &#x2F;app&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; . .&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;RUN&lt;&#x2F;span&gt;&lt;span&gt; GOARCH=arm64 GOOS=linux CGO_ENABLED=0 go build -trimpath -ldflags=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;-s -w&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt; -o .&#x2F;bootstrap .&#x2F;main.go&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;FROM&lt;&#x2F;span&gt;&lt;span&gt; scratch&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; --from=builder &#x2F;etc&#x2F;ssl&#x2F;certs&#x2F;ca-certificates.crt &#x2F;etc&#x2F;ssl&#x2F;certs&#x2F;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; --from=builder &#x2F;app&#x2F;bootstrap &#x2F;bootstrap&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; --from=public.ecr.aws&#x2F;awsguru&#x2F;aws-lambda-adapter:0.9.1 &#x2F;lambda-adapter &#x2F;opt&#x2F;extensions&#x2F;lambda-adapter&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;ENV&lt;&#x2F;span&gt;&lt;span&gt; PORT=8000&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;EXPOSE&lt;&#x2F;span&gt;&lt;span&gt; 8000&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;ENTRYPOINT&lt;&#x2F;span&gt;&lt;span&gt; [ &lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;&#x2F;bootstrap&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt; ]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;AWS Lambda Web Adapter も入っているので gin や fiber で作った API サーバをそのまま Lambda に上げられる。Lambda での運用が厳しかった場合は ECS に上げてもそのまま動く。多分。&lt;&#x2F;p&gt;
+&lt;p&gt;ビルドコンテキストが main.go の在処であれば改変不要でそのまま使用できる。はず。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>Zola 始めてみる</title>
+        <published>2025-12-21T00:00:00+00:00</published>
+        <updated>2025-12-21T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20251221-init-zola/"/>
+        <id>https://sekky89.github.io/20251221-init-zola/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20251221-init-zola/">&lt;p&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;&quot;&gt;Zola&lt;&#x2F;a&gt; でページを作ってみました。&lt;br &#x2F;&gt;
+テーマは &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;st1020&#x2F;kita&quot;&gt;kita&lt;&#x2F;a&gt; を使用しました。&lt;&#x2F;p&gt;
+&lt;p&gt;GitHub Actions Workflow の参考です。ほぼデフォルトで、gh-pages ブランチにビルド成果物が入り、それを公開しています。&lt;br &#x2F;&gt;
+なので、公開パスは &lt;code&gt;gh-pages&lt;&#x2F;code&gt; の &lt;code&gt;&#x2F;(root)&lt;&#x2F;code&gt; となります。GitHub で直接設定している箇所はそれ以外ありません。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;on: push&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;name: Build and deploy GH Pages&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;jobs:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  build:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    permissions:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      contents: write&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    runs-on: ubuntu-latest&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    if: github.ref == &amp;#39;refs&#x2F;heads&#x2F;main&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    steps:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      - name: checkout&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        uses: actions&#x2F;checkout@v6&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        with:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          submodules: true&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      - name: build_and_deploy&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        uses: shalzz&#x2F;zola-deploy-action@master&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        env:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          TOKEN: ${{ secrets.GITHUB_TOKEN }}&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;設定を確かめて遊ぶ目的なので大した内容が増える見込みはありません。&lt;br &#x2F;&gt;
+メモ置場になる予定です。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>
