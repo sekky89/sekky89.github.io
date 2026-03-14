@@ -39,7 +39,7 @@ tags = ["claude", "backend", "go", "sqldef"]
 
 細かなところで、sqlc-gen-crud や sqldef が抜けてたりするのはご愛嬌。
 
-```mermaid
+{% mermaid() %}
 block-beta
   columns 4
 
@@ -72,7 +72,7 @@ block-beta
   style LINT fill:#95a5a6,color:#fff
   style ARCH fill:#95a5a6,color:#fff
   style TEST fill:#95a5a6,color:#fff
-```
+{% end %}
 
 Claude 君に作らせたいい加減な図。
 
@@ -128,7 +128,7 @@ usecase の interface 作っても良かったが、go の思想的に interface
 機能・非機能要件を与え、domain model と repository interface 定義、usecase の定義、OpenAPI の定義、DB テーブルの定義を進めた上でそれぞれレビュー。
 その上で、各自動生成ツールで吐いたコードを与えた要件に合わせて繋ぎ合わせる実装をさせるイメージ。実装も当然レビューはする。
 
-```mermaid
+{% mermaid() %}
 flowchart LR
   subgraph 手書き["🤖 AIが書く / 人がレビュー"]
     OA[OpenAPI 定義<br/>openapi.yaml]
@@ -167,6 +167,6 @@ flowchart LR
   DM & UC --> AI
   AI --> GL
   AI --> AL
-```
+{% end %}
 
 自動生成ツールは設定と定義が正しければ生成物を疑う余地はないので、全てをAIに生成させることによる生成コードの不確定さを排除できる。あとはレビュー観点のうち機械的にチェックできるものは極力 linter で排除することで人目による確認の負荷を減らすことができていると考える。
