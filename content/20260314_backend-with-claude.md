@@ -3,7 +3,7 @@ title = "Claude 君と練ったバックエンドアーキテクチャ"
 date = "2026-03-14"
 description = "全部は生成させない"
 [taxonomies]
-tags = ["claude", "backend", "go", "sqldef"]
+tags = ["claude", "backend", "go"]
 +++
 
 ついに遊び半分で Claude Code (Pro) に課金してしまった。課金してしまったからには遊ばねば。
