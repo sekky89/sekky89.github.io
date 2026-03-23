@@ -1,0 +1,353 @@
+<!doctype html>
+<html class="not-ready lg:text-base overflow-y-scroll scroll-pt-14 scheme-light dark:scheme-dark" lang="en">
+
+<head prefix="og: https://ogp.me/ns# article: https://ogp.me/ns/article#">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="generator" content="Zola v0.21.0" />
+  <title>Claude 君と練ったフロントエンドアーキテクチャ | sekky89</title>
+  <meta property="og:site_name" content="sekky89" />
+  <meta property="og:title" content="Claude 君と練ったフロントエンドアーキテクチャ" />
+  <meta name="description" content="Ox と Bun と React Compiler の時代" />
+  <meta property="og:description" content="Ox と Bun と React Compiler の時代" />
+  <meta property="og:url" content="https://sekky89.github.io/20260314-frontend-with-claude/" />
+  <link rel="canonical" href="https://sekky89.github.io/20260314-frontend-with-claude/" />
+  <meta property="og:type" content="article" />
+  <meta property="article:published_time" content="2026-03-14T00:00:00+00:00" />
+  <meta property="article:tag" content="claude" />
+  <meta property="article:tag" content="frontend" />
+  <meta property="article:tag" content="react" />
+  <meta property="article:tag" content="typescript" />
+  <link rel="alternate" type="application/atom+xml" href="https://sekky89.github.io/atom.xml" title="sekky89 | Atom" />
+  <!-- Begin Head inject -->
+  
+  <!-- End Head inject -->
+  <link rel="stylesheet" href="https://sekky89.github.io/main.min.css?h=78462684530fb1a48e39" />
+  <link rel="stylesheet" href="https://sekky89.github.io/icons.css?h=7dd5ab449fa840fc01e2" />
+  <style>:root{--bg: #f4f4f5; --header: #e4e4e7;} :root.dark{--bg: #18181b; --header: #27272a;}</style>
+  <meta name="theme-color" data-light="#e4e4e7" data-dark="#27272a" content="#e4e4e7" />
+  <link rel="icon" type="image/x-icon" href="https://sekky89.github.io/favicon.ico" />
+  <link rel="apple-touch-icon" type="image/png" href="https://sekky89.github.io/apple-touch-icon.png?h=58bee300054c5308feb3" />
+  <link rel="icon" type="image/png" href="https://sekky89.github.io/android-icon.png?h=8d80ec95446bd2c36826" />
+  <script src="https://sekky89.github.io/js/zola-theme.min.js?h=26975b146d48e6ff41af"></script>
+  <!-- Begin Head End inject -->
+  
+  <!-- End Head End inject -->
+</head>
+
+<body class="text-black duration-100 ease-out dark:text-white">
+  <!-- Header -->
+<header class="header fixed top-0 z-40 mx-auto min-h-13 w-full">
+  <div class="mx-auto w-full max-w-4xl p-2.5 lg:flex lg:justify-between">
+    <div class="flex justify-between">
+      <div class="flex items-center min-h-8 overflow-hidden">
+        <a title="Go to home page [Alt + !]" accesskey="!"
+          href="https://sekky89.github.io/"
+          class="text-2xl font-semibold truncate">sekky89</a>
+        <button type="button" title="Switch color scheme [Alt + $]" accesskey="$"
+          onclick="window.zolaTheme.color.toggle();"
+          class="btn-dark ml-4 h-6 w-6 shrink-0 cursor-pointer text-[0px]
+            bg-center bg-no-repeat bg-cover [background-image:var(--icons-btn-dark,url(icons/btn-dark.svg))]
+            dark:[background-image:var(--icons-btn-light,url(icons/btn-light.svg))] dark:invert"
+        ></button>
+        <button type="button" title="Open search [Alt + /]" accesskey="/"
+          onclick="window.zolaTheme.search.toggle();"
+          class="btn-search ml-4 h-6 w-6 shrink-0 cursor-pointer text-[0px]
+            bg-center bg-no-repeat bg-cover [background-image:var(--icons-search,url(icons/search.svg))] dark:invert"
+        ></button>
+      </div>
+      <div title="Toggle menu [Alt + `+`]" role="button" accesskey="+" tabindex="0"
+        class="btn-menu relative z-50 flex h-8 w-8 shrink-0 cursor-pointer select-none flex-col items-center justify-center gap-2.5 lg:hidden"
+        onclick="window.zolaTheme.menu.toggleHeader();"
+        onkeydown="(event.keyCode == 13 || event.keyCode == 32) ? event.preventDefault() || window.zolaTheme.menu.toggleHeader() : true;"
+      ></div>
+    </div>
+    <nav class="flex w-full items-center lg:w-auto">
+      <menu
+        class="nav-wrapper flex w-full flex-col py-2 lg:w-auto lg:flex-row lg:self-center lg:py-0">
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/projects"
+          >Projects</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/archive"
+          >Archive</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/tags"
+          >Tags</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/about"
+          >About</a>
+        </li>
+      </menu>
+      <!-- Begin Header Nav inject -->
+      
+      <!-- End Header Nav inject -->
+    </nav>
+  </div>
+</header>
+
+  <!-- Begin Body Start inject -->
+  
+  <!-- End Body Start inject -->
+  <main class="prose prose-neutral dark:prose-invert prose-pre:rounded-lg prose-img:rounded-lg
+    relative mx-auto min-h-[calc(100vh-4rem)] max-w-3xl px-4 pt-28 lg:pt-32 pb-12 wrap-break-word">
+      <!-- Search -->
+<div id="linkita-search-wrapper" class="hidden">
+  <ul id="linkita-search-results"></ul>
+</div>
+<script>window.zolaTheme.search.init({ scripts: ["https://sekky89.github.io/elasticlunr.min.js", "https://sekky89.github.io/search_index.en.js"], arg: { w: "#linkita-search-wrapper", r: "#linkita-search-results" } });</script>
+
+    
+<article>
+  <!-- Begin Page Start inject -->
+  
+  <!-- End Page Start inject -->
+
+  <header class="mb-16">
+    <h1 class="my-0! pb-2.5">Claude 君と練ったフロントエンドアーキテクチャ</h1>
+    <!-- Page Info -->
+<div class="text-sm antialiased opacity-80"><time
+      datetime="2026-03-14T00:00:00+00:00">2026-03-14</time><span
+        class="middot"></span><time
+    datetime="PT0H6M0S">6&nbsp;min</time><span
+      class="middot"></span><span>sekky89</span>
+</div>
+
+  </header>
+  <!-- TOC -->
+<nav class="block-bg prose-a:secondary-link mb-12 rounded-lg p-2 text-lg">
+  <details>
+    <summary class="select-none py-0.5 lg:py-1 pl-3.5" title="[Alt + =]" accesskey="=">
+      <span class="cursor-pointer ml-0.5">Table of Contents</span>
+    </summary>
+    <ul class="ps-8">
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#porisi">ポリシー</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#ji-shu-sutatuku">技術スタック</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#xuan-ding-jing-wei">選定経緯</a>
+        <ul>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#bun">Bun</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#react-19-vite-rolldown">React 19 + Vite + Rolldown</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#react-compiler">React Compiler</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#tanstack-query-zustand">TanStack Query + Zustand</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#shadcn-ui-radix-ui-tailwind-css-v4">shadcn&#x2F;ui + Radix UI + Tailwind CSS v4</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#valibot-react-hook-form">Valibot + React Hook Form</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#openapi-typescript-hey-api-openapi-ts">openapi-typescript + @hey-api&#x2F;openapi-ts</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#oxlint-oxfmt">oxlint + oxfmt</a>
+          </li>
+        </ul>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#kai-fa-ti-yan">開発体験</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#sonota">その他</a>
+      </li>
+    </ul>
+  </details>
+</nav>
+
+  <!-- Content -->
+  <section><p><a href="https://sekky89.github.io/20260314-backend-with-claude/">バックエンド編</a>の続き。フロントエンド側の選定についても書いておく。</p>
+<h2 id="porisi">ポリシー</h2>
+<p>バックエンド同様、以下を基本方針とした。</p>
+<ul>
+<li>なるべく宣言的</li>
+<li>なるべく自動生成ツールを活用</li>
+<li>AI が書きやすく、人がレビューしやすい構成</li>
+</ul>
+<p>加えてフロントエンド固有のルールとして、AI が生成するコードのブレを減らすために攻めたコーディング規約を設けた。</p>
+<h2 id="ji-shu-sutatuku">技術スタック</h2>
+<table><thead><tr><th>カテゴリ</th><th>技術</th><th>バージョン</th></tr></thead><tbody>
+<tr><td>ランタイム</td><td>Bun</td><td>最新安定版</td></tr>
+<tr><td>フレームワーク</td><td>React</td><td>19.x</td></tr>
+<tr><td>ビルドツール</td><td>Vite + Rolldown</td><td>最新安定版</td></tr>
+<tr><td>言語</td><td>TypeScript</td><td>5.x (strict)</td></tr>
+<tr><td>ルーティング</td><td>React Router</td><td>v7</td></tr>
+<tr><td>サーバー状態管理</td><td>TanStack Query</td><td>v5</td></tr>
+<tr><td>クライアント状態管理</td><td>Zustand</td><td>v5</td></tr>
+<tr><td>UIコンポーネント</td><td>Radix UI + shadcn/ui</td><td>最新安定版</td></tr>
+<tr><td>スタイリング</td><td>Tailwind CSS</td><td>v4</td></tr>
+<tr><td>フォーム管理</td><td>React Hook Form + Valibot</td><td>v7 / v1</td></tr>
+<tr><td>API型生成</td><td>openapi-typescript + @hey-api/openapi-ts</td><td>最新安定版</td></tr>
+<tr><td>コード品質</td><td>oxfmt / oxlint</td><td>最新安定版</td></tr>
+</tbody></table>
+<h2 id="xuan-ding-jing-wei">選定経緯</h2>
+<h3 id="bun"><a rel="external" href="https://bun.sh/">Bun</a></h3>
+<p>npm / yarn / pnpm ではなく Bun。速い。それだけで十分な理由になる。パッケージマネージャ、テストランナー、スクリプトランナーを一本化できるのも良い。</p>
+<h3 id="react-19-vite-rolldown"><a rel="external" href="https://react.dev/">React</a> 19 + <a rel="external" href="https://vite.dev/">Vite</a> + <a rel="external" href="https://rolldown.rs/">Rolldown</a></h3>
+<p>Next.js は今回不要。SPA で十分だし、SSR/SSG の複雑さを持ち込みたくなかった。CloudFront + S3 に置くだけのシンプルなデプロイにしたかった。</p>
+<p>ビルドツールは Vite。バンドラが Rolldown に移行しつつあり、esbuild + Rollup の二重構成が解消されていく方向なのも良い。</p>
+<h3 id="react-compiler"><a rel="external" href="https://react.dev/learn/react-compiler">React Compiler</a></h3>
+<p>React 19 + React Compiler (Babel plugin) を有効化。これにより <code>useMemo</code> / <code>useCallback</code> の手動最適化が不要になった。AI にコードを書かせる上で「ここは memo 化すべきか」の判断を省けるのは大きい。</p>
+<h3 id="tanstack-query-zustand"><a rel="external" href="https://tanstack.com/query">TanStack Query</a> + <a rel="external" href="https://zustand.docs.pmnd.rs/">Zustand</a></h3>
+<p>状態管理は「サーバー状態」と「クライアント状態」を明確に分離した。</p>
+<ul>
+<li><strong>サーバー状態（API データ）</strong> → TanStack Query: キャッシュ、再取得、楽観的更新を一元管理</li>
+<li><strong>クライアント状態（UI の状態）</strong> → Zustand: サイドバー開閉、選択中のテナントなど最小限の状態</li>
+</ul>
+<p>Zustand にAPI呼び出しを持たせない。非同期は TanStack Query に任せる。この境界を明確にしておくと AI が迷わない。</p>
+<h3 id="shadcn-ui-radix-ui-tailwind-css-v4"><a rel="external" href="https://ui.shadcn.com/">shadcn/ui</a> + <a rel="external" href="https://www.radix-ui.com/">Radix UI</a> + <a rel="external" href="https://tailwindcss.com/">Tailwind CSS</a> v4</h3>
+<p>UIコンポーネントは shadcn/ui を採用。Radix UI ベースでアクセシビリティが担保されており、コピペベースなのでカスタマイズが容易。Tailwind v4 との相性も良い。</p>
+<p>CSS-in-JS は採用しない。Tailwind のユーティリティクラスで統一することで、AI が生成するスタイルの一貫性を保てる。</p>
+<h3 id="valibot-react-hook-form"><a rel="external" href="https://valibot.dev/">Valibot</a> + <a rel="external" href="https://react-hook-form.com/">React Hook Form</a></h3>
+<p>バリデーションには Valibot を選択。<a rel="external" href="https://zod.dev/">Zod</a> でも良かったが、Valibot はツリーシェイキングに優れバンドルサイズが小さい。<code>InferOutput</code> で型を導出できるので手書きの型定義が不要。</p>
+<h3 id="openapi-typescript-hey-api-openapi-ts"><a rel="external" href="https://openapi-ts.dev/">openapi-typescript</a> + <a rel="external" href="https://heyapi.dev/">@hey-api/openapi-ts</a></h3>
+<p>バックエンドの OpenAPI 定義から TypeScript の型とクライアントスキーマを自動生成する。バックエンド記事で触れた oapi-codegen と同じ OpenAPI 定義が源泉になるので、フロント・バックで型の不整合が起きない。</p>
+<h3 id="oxlint-oxfmt"><a rel="external" href="https://oxc.rs/">oxlint + oxfmt</a></h3>
+<p>ESLint + Prettier ではなく Ox 系に統一。圧倒的に速い。設定ファイルもシンプル。</p>
+<p>Ox 系で以下の攻めたルールを設定した。</p>
+<ul>
+<li><code>any</code> 型禁止（<code>unknown</code> + 型ガードで代替）</li>
+<li><code>let</code> 原則禁止（<code>const</code> で統一）</li>
+<li><code>function</code> 宣言禁止（アロー関数で統一）</li>
+</ul>
+<p>tooling での強制が難しいものは規約として設けた。</p>
+<ul>
+<li><code>for</code> / <code>while</code> 原則禁止（配列メソッドで代替）</li>
+<li>過剰な関数分割の禁止（1画面1コンポーネント + ローカルヘルパーが基本）</li>
+</ul>
+<p>AI に書かせると表現にブレが出やすい部分を機械的に潰す意図。選択肢を減らすことで生成コードの一貫性が上がる。</p>
+<h2 id="kai-fa-ti-yan">開発体験</h2>
+<p>バックエンド同様、OpenAPI 定義を起点に型を自動生成し、AI が実装、linter でチェックする流れ。</p>
+<pre class="mermaid bg-inherit" translate="no">
+  flowchart LR
+subgraph 定義[&quot;🤖 AIが書く &#x2F; 人がレビュー&quot;]
+OA[OpenAPI 定義&lt;br&#x2F;&gt;openapi.yaml]
+PG[ページ&lt;br&#x2F;&gt;コンポーネント]
+ST[ストア&lt;br&#x2F;&gt;Zustand]
+HK[カスタムフック]
+end
+
+subgraph 自動生成[&quot;⚙️ ツールが生成するもの&quot;]
+TP[API 型定義&lt;br&#x2F;&gt;openapi-typescript]
+SC[API スキーマ&lt;br&#x2F;&gt;@hey-api&#x2F;openapi-ts]
+UI[UI コンポーネント&lt;br&#x2F;&gt;shadcn&#x2F;ui]
+end
+
+OA --&gt; TP
+OA --&gt; SC
+
+subgraph 検証[&quot;🔍 機械的チェック&quot;]
+OX[oxlint]
+FM[oxfmt]
+TC[TypeScript&lt;br&#x2F;&gt;型チェック]
+end
+
+TP &amp; SC &amp; UI --&gt; AI{{&quot;🤖 Claude&lt;br&#x2F;&gt;実装&quot;}}
+PG &amp; ST &amp; HK --&gt; AI
+AI --&gt; OX
+AI --&gt; FM
+AI --&gt; TC
+</pre>
+<p>バックエンドほど自動生成の層は厚くないが、OpenAPI 起点の型生成と攻めた linter ルールで AI 生成コードの品質を担保している。コーディング規約で選択肢を絞ることで、レビュー時に「書き方の違い」ではなく「ロジックの正しさ」に集中できる。</p>
+<h2 id="sonota">その他</h2>
+<p>この記事、途中で書くの疲れて claude に生成させました。</p>
+</section>
+  <hr />
+  <!-- Post Taxonomies -->
+<footer class="mt-12 flex flex-col" tabindex="-1" accesskey="_">
+  <div class="mb-2 flex flex-wrap">
+    <span class="block-bg mr-1.5 mb-1.5 rounded-lg px-5 py-1.5">Tags</span>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/claude/">claude</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/frontend/">frontend</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/react/">react</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/typescript/">typescript</a>
+    
+  </div>
+</footer>
+
+  <!-- Post Nav -->
+<nav class="block-bg mt-12 flex flex-wrap rounded-lg text-lg">
+  <a
+    class="block-hover-mask flex min-w-[50%] grow items-center rounded-l-md p-6 pr-3 font-semibold no-underline"
+    href="https://sekky89.github.io/20260314-cdk-with-account-settings/" accesskey=","
+    ><span class="mr-1.5">&#8249;</span><span>CDK でアカウントセキュリティ設定</span></a>
+  <a
+    class="block-hover-mask ml-auto flex min-w-[50%] grow items-center justify-end rounded-r-md p-6 pl-3 font-semibold no-underline"
+    href="https://sekky89.github.io/20260314-sqldef/" accesskey="."
+    ><span>sqldefが良さそう。</span><span class="ml-1.5">&#8250;</span></a>
+</nav>
+
+  <!-- Begin Page End inject -->
+  
+  <!-- End Page End inject -->
+</article>
+
+  </main>
+  <!-- Footer -->
+<footer class="mx-auto flex lg:mt-5 max-w-3xl flex-wrap items-center px-4 py-3 text-sm opacity-60">
+  <div class="mr-auto basis-full lg:basis-1/2">
+  © <time datetime="2026">2026</time> sekky89
+  </div>
+  <div class="flex basis-full lg:basis-1/2 lg:justify-end">
+    <span class="mr-6 lg:ml-6">
+      <a class="link" href="https://www.getzola.org/" target="_blank">Powered by Zola</a>
+    </span>
+    <a class="link" href="https://www.getzola.org/themes/linkita/" target="_blank">&#9998; Linkita</a>
+  </div>
+  <!-- Begin Footer inject -->
+  
+  <!-- End Footer inject -->
+</footer>
+
+  
+  <link rel="stylesheet" href="https://sekky89.github.io/katex/katex.min.css?h=383e7b8d45a3003d6ca1" />
+  <script defer src="https://sekky89.github.io/katex/katex.min.js?h=5e4f3b03c66a3360fe5c"></script>
+  <script defer src="https://sekky89.github.io/katex/contrib/auto-render.min.js?h=bb53eb953394531aae36"></script>
+  <script>document.addEventListener("DOMContentLoaded", window.zolaTheme.katex.init);</script>
+  <!-- Mermaid -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    window.zolaTheme.mermaid.init({ mermaid, s: ".mermaid" });
+  </script>
+
+  <!-- Begin Body End inject -->
+  
+  <!-- End Body End inject -->
+</body>
+
+</html>

@@ -1,0 +1,371 @@
+<!doctype html>
+<html class="not-ready lg:text-base overflow-y-scroll scroll-pt-14 scheme-light dark:scheme-dark" lang="en">
+
+<head prefix="og: https://ogp.me/ns# article: https://ogp.me/ns/article#">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="generator" content="Zola v0.21.0" />
+  <title>Claude 君と練ったバックエンドアーキテクチャ | sekky89</title>
+  <meta property="og:site_name" content="sekky89" />
+  <meta property="og:title" content="Claude 君と練ったバックエンドアーキテクチャ" />
+  <meta name="description" content="全部は生成させない" />
+  <meta property="og:description" content="全部は生成させない" />
+  <meta property="og:url" content="https://sekky89.github.io/20260314-backend-with-claude/" />
+  <link rel="canonical" href="https://sekky89.github.io/20260314-backend-with-claude/" />
+  <meta property="og:type" content="article" />
+  <meta property="article:published_time" content="2026-03-14T00:00:00+00:00" />
+  <meta property="article:tag" content="claude" />
+  <meta property="article:tag" content="backend" />
+  <meta property="article:tag" content="go" />
+  <link rel="alternate" type="application/atom+xml" href="https://sekky89.github.io/atom.xml" title="sekky89 | Atom" />
+  <!-- Begin Head inject -->
+  
+  <!-- End Head inject -->
+  <link rel="stylesheet" href="https://sekky89.github.io/main.min.css?h=78462684530fb1a48e39" />
+  <link rel="stylesheet" href="https://sekky89.github.io/icons.css?h=7dd5ab449fa840fc01e2" />
+  <style>:root{--bg: #f4f4f5; --header: #e4e4e7;} :root.dark{--bg: #18181b; --header: #27272a;}</style>
+  <meta name="theme-color" data-light="#e4e4e7" data-dark="#27272a" content="#e4e4e7" />
+  <link rel="icon" type="image/x-icon" href="https://sekky89.github.io/favicon.ico" />
+  <link rel="apple-touch-icon" type="image/png" href="https://sekky89.github.io/apple-touch-icon.png?h=58bee300054c5308feb3" />
+  <link rel="icon" type="image/png" href="https://sekky89.github.io/android-icon.png?h=8d80ec95446bd2c36826" />
+  <script src="https://sekky89.github.io/js/zola-theme.min.js?h=26975b146d48e6ff41af"></script>
+  <!-- Begin Head End inject -->
+  
+  <!-- End Head End inject -->
+</head>
+
+<body class="text-black duration-100 ease-out dark:text-white">
+  <!-- Header -->
+<header class="header fixed top-0 z-40 mx-auto min-h-13 w-full">
+  <div class="mx-auto w-full max-w-4xl p-2.5 lg:flex lg:justify-between">
+    <div class="flex justify-between">
+      <div class="flex items-center min-h-8 overflow-hidden">
+        <a title="Go to home page [Alt + !]" accesskey="!"
+          href="https://sekky89.github.io/"
+          class="text-2xl font-semibold truncate">sekky89</a>
+        <button type="button" title="Switch color scheme [Alt + $]" accesskey="$"
+          onclick="window.zolaTheme.color.toggle();"
+          class="btn-dark ml-4 h-6 w-6 shrink-0 cursor-pointer text-[0px]
+            bg-center bg-no-repeat bg-cover [background-image:var(--icons-btn-dark,url(icons/btn-dark.svg))]
+            dark:[background-image:var(--icons-btn-light,url(icons/btn-light.svg))] dark:invert"
+        ></button>
+        <button type="button" title="Open search [Alt + /]" accesskey="/"
+          onclick="window.zolaTheme.search.toggle();"
+          class="btn-search ml-4 h-6 w-6 shrink-0 cursor-pointer text-[0px]
+            bg-center bg-no-repeat bg-cover [background-image:var(--icons-search,url(icons/search.svg))] dark:invert"
+        ></button>
+      </div>
+      <div title="Toggle menu [Alt + `+`]" role="button" accesskey="+" tabindex="0"
+        class="btn-menu relative z-50 flex h-8 w-8 shrink-0 cursor-pointer select-none flex-col items-center justify-center gap-2.5 lg:hidden"
+        onclick="window.zolaTheme.menu.toggleHeader();"
+        onkeydown="(event.keyCode == 13 || event.keyCode == 32) ? event.preventDefault() || window.zolaTheme.menu.toggleHeader() : true;"
+      ></div>
+    </div>
+    <nav class="flex w-full items-center lg:w-auto">
+      <menu
+        class="nav-wrapper flex w-full flex-col py-2 lg:w-auto lg:flex-row lg:self-center lg:py-0">
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/projects"
+          >Projects</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/archive"
+          >Archive</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/tags"
+          >Tags</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/about"
+          >About</a>
+        </li>
+      </menu>
+      <!-- Begin Header Nav inject -->
+      
+      <!-- End Header Nav inject -->
+    </nav>
+  </div>
+</header>
+
+  <!-- Begin Body Start inject -->
+  
+  <!-- End Body Start inject -->
+  <main class="prose prose-neutral dark:prose-invert prose-pre:rounded-lg prose-img:rounded-lg
+    relative mx-auto min-h-[calc(100vh-4rem)] max-w-3xl px-4 pt-28 lg:pt-32 pb-12 wrap-break-word">
+      <!-- Search -->
+<div id="linkita-search-wrapper" class="hidden">
+  <ul id="linkita-search-results"></ul>
+</div>
+<script>window.zolaTheme.search.init({ scripts: ["https://sekky89.github.io/elasticlunr.min.js", "https://sekky89.github.io/search_index.en.js"], arg: { w: "#linkita-search-wrapper", r: "#linkita-search-results" } });</script>
+
+    
+<article>
+  <!-- Begin Page Start inject -->
+  
+  <!-- End Page Start inject -->
+
+  <header class="mb-16">
+    <h1 class="my-0! pb-2.5">Claude 君と練ったバックエンドアーキテクチャ</h1>
+    <!-- Page Info -->
+<div class="text-sm antialiased opacity-80"><time
+      datetime="2026-03-14T00:00:00+00:00">2026-03-14</time><span
+        class="middot"></span><time
+    datetime="PT0H10M0S">10&nbsp;min</time><span
+      class="middot"></span><span>sekky89</span>
+</div>
+
+  </header>
+  <!-- TOC -->
+<nav class="block-bg prose-a:secondary-link mb-12 rounded-lg p-2 text-lg">
+  <details>
+    <summary class="select-none py-0.5 lg:py-1 pl-3.5" title="[Alt + =]" accesskey="=">
+      <span class="cursor-pointer ml-0.5">Table of Contents</span>
+    </summary>
+    <ul class="ps-8">
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#porisi">ポリシー</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#ji-shu-sutatuku">技術スタック</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#xuan-ding-jing-wei">選定経緯</a>
+        <ul>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#go">Go</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#fiber-oapi-codegen-redocly-aws-lambda-web-adapter">fiber, oapi-codegen, redocly, AWS Lambda Web Adapter</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#sqlc-pgx-sqlc-gen-crud-sqldef">sqlc, pgx, sqlc-gen-crud, sqldef</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#go-arch-lint">go-arch-lint</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#wire">wire</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#sonota">その他</a>
+          </li>
+        </ul>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#kai-fa-ti-yan">開発体験</a>
+      </li>
+    </ul>
+  </details>
+</nav>
+
+  <!-- Content -->
+  <section><p>ついに遊び半分で Claude Code (Pro) に課金してしまった。課金してしまったからには遊ばねば。</p>
+<h2 id="porisi">ポリシー</h2>
+<p>個人的なポリシーとして今回は以下のようなルールを設けた。</p>
+<ul>
+<li>なるべく宣言的</li>
+<li>なるべく自動生成ツールを活用</li>
+<li>SOLID 原則</li>
+<li>Clean Architecture 風</li>
+<li>DDD 風</li>
+</ul>
+<p>この縛りを設けて、AI開発による不確定部分を減らすこととトークンの節約を試みた。トークンの節約についてはできたのかできてないのかわかってない。</p>
+<h2 id="ji-shu-sutatuku">技術スタック</h2>
+<p>結局以下のような構成に。これも Claude に書かせた表。</p>
+<table><thead><tr><th>カテゴリ</th><th>技術</th><th>バージョン</th></tr></thead><tbody>
+<tr><td>言語</td><td>Go</td><td>1.26+</td></tr>
+<tr><td>Webフレームワーク</td><td>Gofiber v3</td><td>最新安定版</td></tr>
+<tr><td>データベースドライバ</td><td>jackc/pgx v5</td><td>v5.x</td></tr>
+<tr><td>DI</td><td>google/wire</td><td>最新安定版</td></tr>
+<tr><td>ID生成</td><td>lucsky/cuid</td><td>最新安定版</td></tr>
+<tr><td>コード生成</td><td>oapi-codegen, sqlc</td><td>最新安定版</td></tr>
+<tr><td>Linter</td><td>golangci-lint</td><td>最新安定版</td></tr>
+<tr><td>アーキテクチャLinter</td><td>go-arch-lint</td><td>最新安定版</td></tr>
+<tr><td>テスト</td><td>標準testing + mockgen</td><td>—</td></tr>
+<tr><td>デプロイ</td><td>AWS Lambda (linux/arm64)</td><td>—</td></tr>
+</tbody></table>
+<p>細かなところで、sqlc-gen-crud や sqldef が抜けてたりするのはご愛嬌。</p>
+<pre class="mermaid bg-inherit" translate="no">
+  block-beta
+columns 4
+
+RT[&quot;AWS Lambda + Web Adapter&quot;]:4
+
+FIBER[&quot;Gofiber v3&quot;]:2 OAP[&quot;oapi-codegen&quot;]:1 RED[&quot;redocly&quot;]:1
+
+WIRE[&quot;wire&quot;]:2 MOCK[&quot;mockgen&quot;]:2
+
+CUID[&quot;lucsky&#x2F;cuid&quot;]:4
+
+PGX[&quot;pgx v5&quot;]:1 SQLC[&quot;sqlc&quot;]:1 CRUD[&quot;sqlc-gen-crud&quot;]:1 SDEF[&quot;sqldef&quot;]:1
+
+DB[(&quot;PostgreSQL（Aurora DSQL）&quot;)]:4
+
+LINT[&quot;golangci-lint&quot;]:2 ARCH[&quot;go-arch-lint&quot;]:1 TEST[&quot;標準 testing&quot;]:1
+
+style RT fill:#4a90d9,color:#fff
+style FIBER fill:#7bc96f,color:#fff
+style OAP fill:#7bc96f,color:#fff
+style RED fill:#7bc96f,color:#fff
+style WIRE fill:#f5a623,color:#fff
+style MOCK fill:#f5a623,color:#fff
+style CUID fill:#d0021b,color:#fff
+style PGX fill:#9b59b6,color:#fff
+style SQLC fill:#9b59b6,color:#fff
+style CRUD fill:#9b59b6,color:#fff
+style SDEF fill:#9b59b6,color:#fff
+style DB fill:#34495e,color:#fff
+style LINT fill:#95a5a6,color:#fff
+style ARCH fill:#95a5a6,color:#fff
+style TEST fill:#95a5a6,color:#fff
+</pre>
+<p>Claude 君に作らせたいい加減な図。</p>
+<h2 id="xuan-ding-jing-wei">選定経緯</h2>
+<h3 id="go"><a rel="external" href="https://go.dev/">Go</a></h3>
+<p>今時の Web アプリケーションならもう Go かなと。パフォーマンス極めるなら rust かもしれないけど今回は Go にしてみた。シングルバイナリゆえのコールドスタートの速さ、デプロイの容易さが良い。</p>
+<h3 id="fiber-oapi-codegen-redocly-aws-lambda-web-adapter"><a rel="external" href="https://gofiber.io/">fiber</a>, <a rel="external" href="https://github.com/oapi-codegen/oapi-codegen">oapi-codegen</a>, <a rel="external" href="https://redocly.com/">redocly</a>, <a rel="external" href="https://github.com/awslabs/aws-lambda-web-adapter">AWS Lambda Web Adapter</a></h3>
+<p>gin が主流かもしれないが express インスパイアで生まれた fiber を採用。早いらしい。実測はしてない。ミドルウェアが充実しており、Go 標準 Http ハンドラの Adapter も提供されている。</p>
+<p>OpenAPI 定義からの自動生成には oapi-codegen を採用。各サーバ用の実装を生成できるが、fiber は対応していない。代わりに Strict Server Interface の生成ができるようになっている。これは標準 Http ハンドラとして生成されるので Adapter を噛ませれば fiber にも組み込める。</p>
+<p>OpenAPI 定義そのもののドキュメント生成兼 linter として redocly を採用。Claude 君には OpenAPI 定義変えたら redocly チェックしてエラー解消してねと指示しておいた。</p>
+<p>Lambda で動かすことを前提に選定したが、個別ハンドラではなく API サーバ丸ごと作って上げる方式を採用。ローカルでの起動が容易など可搬性が良く、リソース増えすぎないので CDK にも優しい。そのままでは Lambda 上で動作しないが、そこは AWS Lambda Web Adapter をレイヤーないしはコンテナに組み入れることでアプリに手を加えることなく対応できる。（数msのレイテンシは犠牲になるが・・・）</p>
+<h3 id="sqlc-pgx-sqlc-gen-crud-sqldef"><a rel="external" href="https://sqlc.dev/">sqlc</a>, <a rel="external" href="https://github.com/jackc/pgx">pgx</a>, <a rel="external" href="https://github.com/sqlc-dev/sqlc-gen-crud">sqlc-gen-crud</a>, <a rel="external" href="https://github.com/sqldef/sqldef">sqldef</a></h3>
+<p>DB 周りは RDB を前提に選定。sqldef で DDL を管理し、そこから sqlc と migration を自動生成。sqlc-gen-crud で標準 CRUD を自動生成。平仄が気になる部分は自動生成で捩じ伏せる。クエリが複雑化したり動的クエリが必要となったら <a rel="external" href="https://github.com/doug-martin/goqu">goqu</a> と組み合わせるのも良さそう。</p>
+<h3 id="go-arch-lint"><a rel="external" href="https://github.com/fe3dback/go-arch-lint">go-arch-lint</a></h3>
+<p>Clean Architecture になっているよねチェッカー。依存方向を定義でき、違反を検出してくれる。SOLID にしろって指示していてもできたコードは依存パッケージの違反がそこそこあったので導入。機械的な仕組みでエラー検出してくれるツールは信頼できる。</p>
+<h3 id="wire"><a rel="external" href="https://github.com/google/wire">wire</a></h3>
+<p>DI にはコンパイル時に静的 DI できる wire を選択。最悪なくとも良いがあると楽という程度の DI なのが良い。</p>
+<p>なぜメンテが停止している wire を？と思われるかもしれないが、メンテが停止しているというより現時点では「完成」だと思う。go のエコシステムが大きく変わらない限り今の wire でずっと使える気がする。</p>
+<p>他にも Dynamic な DI に対応したライブラリには <a rel="external" href="https://github.com/uber-go/fx">fx</a> や <a rel="external" href="https://github.com/samber/do">do</a> などあるが、実装が DI ライブラリに依存してしまう。これが気に入らなかった。その点 wire はプロバイダの定義は必要なものの、コンパイル時に静的 DI するのでランタイムエラーに繋がりにくく、実装も DI ライブラリに依存しない。</p>
+<p>プレーンな go のインタフェースで各層の実装ができるので <a rel="external" href="https://github.com/uber-go/mock">mockgen</a> 等でのテストモック自動生成との親和性も良い。</p>
+<h3 id="sonota">その他</h3>
+<p>ロガーは fiber 内臓ミドルウェアで出力。パフォーマンス上げたければ <a rel="external" href="https://github.com/uber-go/zap">zap</a> にしても良い。</p>
+<p>Clean Architecture だと presentor や usecase interactor も定義するものだが、今回はシンプルなので省略。大規模になってきたり、再利用性を高めたい場合は追加すれば良いと考える。</p>
+<p>usecase の interface 作っても良かったが、go の思想的に interface は利用する側が定義するものとされているため今回はそちらを優先。<br />
+最初から再利用性を考慮して interface を定義して、mockgen でモック作って並行でテスト作っても良いと考えている。</p>
+<h2 id="kai-fa-ti-yan">開発体験</h2>
+<p>機能・非機能要件を与え、domain model と repository interface 定義、usecase の定義、OpenAPI の定義、DB テーブルの定義を進めた上でそれぞれレビュー。
+その上で、各自動生成ツールで吐いたコードを与えた要件に合わせて繋ぎ合わせる実装をさせるイメージ。実装も当然レビューはする。</p>
+<pre class="mermaid bg-inherit" translate="no">
+  flowchart LR
+subgraph 手書き[&quot;🤖 AIが書く &#x2F; 人がレビュー&quot;]
+OA[OpenAPI 定義&lt;br&#x2F;&gt;openapi.yaml]
+DDL[DDL&lt;br&#x2F;&gt;schema.sql]
+QR[クエリ定義&lt;br&#x2F;&gt;queries&#x2F;*.sql]
+DM[ドメイン層&lt;br&#x2F;&gt;entity &#x2F; repository IF&lt;br&#x2F;&gt;&#x2F; service]
+UC[ユースケース層&lt;br&#x2F;&gt;usecase]
+WR[DI 定義&lt;br&#x2F;&gt;wire.go]
+end
+
+subgraph 自動生成[&quot;⚙️ ツールが生成するもの&quot;]
+HC[ハンドラ IF&lt;br&#x2F;&gt;oapi-codegen]
+MD[モデル&lt;br&#x2F;&gt;sqlc]
+CR[CRUD&lt;br&#x2F;&gt;sqlc-gen-crud]
+QC[クエリコード&lt;br&#x2F;&gt;sqlc]
+WG[DI ワイヤリング&lt;br&#x2F;&gt;wire]
+MK[テストモック&lt;br&#x2F;&gt;mockgen]
+end
+
+OA --&gt; HC
+DDL --&gt; MD
+DDL --&gt; CR
+QR --&gt; QC
+DM --&gt; MK
+WR --&gt; WG
+DDL -.-&gt;|sqldef| DB[(実 DB)]
+
+subgraph 検証[&quot;🔍 機械的チェック&quot;]
+RL[redocly]
+GL[golangci-lint]
+AL[go-arch-lint]
+end
+
+OA --&gt; RL
+HC &amp; DM &amp; CR &amp; QC &amp; WG &amp; MK --&gt; AI{{&quot;🤖 Claude&lt;br&#x2F;&gt;繋ぎ合わせ実装&quot;}}
+DM &amp; UC --&gt; AI
+AI --&gt; GL
+AI --&gt; AL
+</pre>
+<p>自動生成ツールは設定と定義が正しければ生成物を疑う余地はないので、全てをAIに生成させることによる生成コードの不確定さを排除できる。あとはレビュー観点のうち機械的にチェックできるものは極力 linter で排除することで人目による確認の負荷を減らすことができていると考える。</p>
+</section>
+  <hr />
+  <!-- Post Taxonomies -->
+<footer class="mt-12 flex flex-col" tabindex="-1" accesskey="_">
+  <div class="mb-2 flex flex-wrap">
+    <span class="block-bg mr-1.5 mb-1.5 rounded-lg px-5 py-1.5">Tags</span>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/claude/">claude</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/backend/">backend</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/go/">go</a>
+    
+  </div>
+</footer>
+
+  <!-- Post Nav -->
+<nav class="block-bg mt-12 flex flex-wrap rounded-lg text-lg">
+  <a
+    class="block-hover-mask flex min-w-[50%] grow items-center rounded-l-md p-6 pr-3 font-semibold no-underline"
+    href="https://sekky89.github.io/20260314-32-4k-display/" accesskey=","
+    ><span class="mr-1.5">&#8249;</span><span>32インチ4K有機ELディスプレイを買った結果いい感じ(DELL AW3225QF)</span></a>
+  <a
+    class="block-hover-mask ml-auto flex min-w-[50%] grow items-center justify-end rounded-r-md p-6 pl-3 font-semibold no-underline"
+    href="https://sekky89.github.io/20260314-cdk-with-account-settings/" accesskey="."
+    ><span>CDK でアカウントセキュリティ設定</span><span class="ml-1.5">&#8250;</span></a>
+</nav>
+
+  <!-- Begin Page End inject -->
+  
+  <!-- End Page End inject -->
+</article>
+
+  </main>
+  <!-- Footer -->
+<footer class="mx-auto flex lg:mt-5 max-w-3xl flex-wrap items-center px-4 py-3 text-sm opacity-60">
+  <div class="mr-auto basis-full lg:basis-1/2">
+  © <time datetime="2026">2026</time> sekky89
+  </div>
+  <div class="flex basis-full lg:basis-1/2 lg:justify-end">
+    <span class="mr-6 lg:ml-6">
+      <a class="link" href="https://www.getzola.org/" target="_blank">Powered by Zola</a>
+    </span>
+    <a class="link" href="https://www.getzola.org/themes/linkita/" target="_blank">&#9998; Linkita</a>
+  </div>
+  <!-- Begin Footer inject -->
+  
+  <!-- End Footer inject -->
+</footer>
+
+  
+  <link rel="stylesheet" href="https://sekky89.github.io/katex/katex.min.css?h=383e7b8d45a3003d6ca1" />
+  <script defer src="https://sekky89.github.io/katex/katex.min.js?h=5e4f3b03c66a3360fe5c"></script>
+  <script defer src="https://sekky89.github.io/katex/contrib/auto-render.min.js?h=bb53eb953394531aae36"></script>
+  <script>document.addEventListener("DOMContentLoaded", window.zolaTheme.katex.init);</script>
+  <!-- Mermaid -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    window.zolaTheme.mermaid.init({ mermaid, s: ".mermaid" });
+  </script>
+
+  <!-- Begin Body End inject -->
+  
+  <!-- End Body End inject -->
+</body>
+
+</html>

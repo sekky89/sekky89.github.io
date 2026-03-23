@@ -1,0 +1,1030 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title>sekky89</title>
+    <subtitle>しがないエンジニアのメモ置場</subtitle>
+    <link rel="self" type="application/atom+xml" href="https://sekky89.github.io/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://sekky89.github.io"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2026-03-23T00:00:00+00:00</updated>
+    <id>https://sekky89.github.io/atom.xml</id>
+    <entry xml:lang="en">
+        <title>ゲーミングPCをOllamaサーバにする構想</title>
+        <published>2026-03-23T00:00:00+00:00</published>
+        <updated>2026-03-23T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260323-ollama-server/"/>
+        <id>https://sekky89.github.io/20260323-ollama-server/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260323-ollama-server/">&lt;p&gt;最近ゲームしなくなった自宅のゲーミングPC（Ryzen 9800X3D &#x2F; 64GB RAM &#x2F; RTX 3080）がただの文鎮と化しているので、Ollamaサーバにして開発用に使えないかという構想メモ。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;motibesiyon&quot;&gt;モチベーション&lt;&#x2F;h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Claude Code で設計・検討した内容の実装作業を、ローカル LLM + aider に任せたい&lt;&#x2F;li&gt;
+&lt;li&gt;Claude は思考・設計が得意、実装の手を動かす部分はローカルで十分なケースがある&lt;&#x2F;li&gt;
+&lt;li&gt;設計は Claude、実装は aider（ローカルLLM）という分業でAPI費用を抑えられる&lt;&#x2F;li&gt;
+&lt;li&gt;RTX 3080 (VRAM 10GB) が遊んでるのはもったいない&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h2 id=&quot;quan-ti-gou-cheng&quot;&gt;全体構成&lt;&#x2F;h2&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                        Tailscale ネットワーク&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                     (CoreDNS で内部名前解決)&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                               |&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        +----------------------+----------------------+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        |                      |                      |&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  [MacBook]           [ゲーミングPC]          [常設サーバ]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;   Claude Code         Windows                Ryzen 5700G &#x2F; 64GB&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;   aider               Ollama + qwen3.5       Proxmox&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                        (GPU: RTX 3080)          |&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                                            [AlmaLinux LXC]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                                              Docker&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                                                ├ Tailscale (userspace)&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                                                ├ Mattermost (Team Edition)&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                                                ├ CoreDNS&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                                                ├ aider Bot&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                                                └ (その他コンテナ)&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;h3 id=&quot;yi-ge-fen-dan&quot;&gt;役割分担&lt;&#x2F;h3&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;マシン&lt;&#x2F;th&gt;&lt;th&gt;役割&lt;&#x2F;th&gt;&lt;th&gt;特徴&lt;&#x2F;th&gt;&lt;&#x2F;tr&gt;&lt;&#x2F;thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;MacBook&lt;&#x2F;td&gt;&lt;td&gt;設計・指示&lt;&#x2F;td&gt;&lt;td&gt;Claude Code で設計、aider で直接実装も可&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;ゲーミングPC&lt;&#x2F;td&gt;&lt;td&gt;GPU推論&lt;&#x2F;td&gt;&lt;td&gt;Ollama 専用。必要な時だけ WoL で起動&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;常設サーバ&lt;&#x2F;td&gt;&lt;td&gt;インフラ基盤&lt;&#x2F;td&gt;&lt;td&gt;常時起動。Mattermost, DNS, Bot 等を集約&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;&#x2F;tbody&gt;&lt;&#x2F;table&gt;
+&lt;p&gt;ゲーミングPC に全部載せない理由:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;ゲーミングPC は電気食うので常時起動したくない（WoL で必要な時だけ）&lt;&#x2F;li&gt;
+&lt;li&gt;Mattermost や Bot は常時起動が前提のサービス&lt;&#x2F;li&gt;
+&lt;li&gt;常設サーバ（Ryzen 5700G）は省電力で24&#x2F;365回せる&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h3 id=&quot;naze-vm-dehanaku-lxc-docker-tailscale-ka&quot;&gt;なぜ VM ではなく LXC + Docker Tailscale か&lt;&#x2F;h3&gt;
+&lt;p&gt;常設サーバ側の AlmaLinux は VM ではなく LXC コンテナで動かす。リソースオーバーヘッドを最小限にするため。&lt;&#x2F;p&gt;
+&lt;p&gt;LXC 上で Tailscale を動かすには TUN デバイスの問題がある（LXC はデフォルトで &lt;code&gt;&#x2F;dev&#x2F;net&#x2F;tun&lt;&#x2F;code&gt; にアクセスできない）が、Tailscale を Docker コンテナとして動かし &lt;code&gt;TS_USERSPACE=true&lt;&#x2F;code&gt;（userspace networking mode）を使うことで回避する。&lt;&#x2F;p&gt;
+&lt;p&gt;userspace mode の制約（subnet routing 不可、パフォーマンス低下）は今回の用途では影響しない:&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;subnet routing → 不要。LXC 自身のサービスにアクセスするだけ&lt;&#x2F;li&gt;
+&lt;li&gt;パフォーマンス → Mattermost のテキストと Ollama API コール程度なので問題なし&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;Tailscale も含めて全サービスが docker-compose.yml に収まるため、環境依存性が低くポータビリティも高い。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;ren-jian-jie-ru-huro&quot;&gt;人間介入フロー&lt;&#x2F;h2&gt;
+&lt;p&gt;メッセージングツールを挟む最大の利点は「人間がゲートになれる」こと。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;Claude Code → Mattermost #design に設計投稿&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                      ↓&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                スマホに通知&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                      ↓&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;            人間がレビュー・承認&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;           （リアクション or コメント）&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                      ↓&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          aider Bot が承認を検知&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;       Ollama (ゲーミングPC) に推論リクエスト&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                      ↓&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;           aider + qwen3.5 で実装&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                      ↓&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;         Mattermost #review に diff 投稿&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                      ↓&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                スマホに通知&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;                      ↓&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;             人間が確認して判断&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;出先からスマホで設計をレビューして、OKならリアクション一つで実装が走る。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;naze-mattermost-ka&quot;&gt;なぜ Mattermost か&lt;&#x2F;h2&gt;
+&lt;p&gt;セルフホスト可能な候補:&lt;&#x2F;p&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;ツール&lt;&#x2F;th&gt;&lt;th&gt;Bot API&lt;&#x2F;th&gt;&lt;th&gt;Docker&lt;&#x2F;th&gt;&lt;th&gt;スマホアプリ&lt;&#x2F;th&gt;&lt;&#x2F;tr&gt;&lt;&#x2F;thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;&lt;strong&gt;Mattermost&lt;&#x2F;strong&gt;&lt;&#x2F;td&gt;&lt;td&gt;Webhook + Bot SDK&lt;&#x2F;td&gt;&lt;td&gt;公式イメージ&lt;&#x2F;td&gt;&lt;td&gt;iOS &#x2F; Android&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;Rocket.Chat&lt;&#x2F;td&gt;&lt;td&gt;REST API + Bot&lt;&#x2F;td&gt;&lt;td&gt;公式イメージ&lt;&#x2F;td&gt;&lt;td&gt;iOS &#x2F; Android&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;Zulip&lt;&#x2F;td&gt;&lt;td&gt;Bot framework&lt;&#x2F;td&gt;&lt;td&gt;公式イメージ&lt;&#x2F;td&gt;&lt;td&gt;iOS &#x2F; Android&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;Matrix (Element)&lt;&#x2F;td&gt;&lt;td&gt;Bot SDK&lt;&#x2F;td&gt;&lt;td&gt;Synapse&lt;&#x2F;td&gt;&lt;td&gt;iOS &#x2F; Android&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;&#x2F;tbody&gt;&lt;&#x2F;table&gt;
+&lt;p&gt;正直どれでも実現できるが、Mattermost は Webhook の作りやすさと Bot SDK のドキュメントの充実度で選定。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;edition-xuan-ding&quot;&gt;Edition 選定&lt;&#x2F;h3&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;&lt;&#x2F;th&gt;&lt;th&gt;Team Edition (MIT OSS)&lt;&#x2F;th&gt;&lt;th&gt;Enterprise Edition Entry モード&lt;&#x2F;th&gt;&lt;&#x2F;tr&gt;&lt;&#x2F;thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;費用&lt;&#x2F;td&gt;&lt;td&gt;無料&lt;&#x2F;td&gt;&lt;td&gt;無料（ライセンスキー不要）&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;メッセージ履歴&lt;&#x2F;td&gt;&lt;td&gt;&lt;strong&gt;制限なし&lt;&#x2F;strong&gt;&lt;&#x2F;td&gt;&lt;td&gt;サーバー全体で10,000件&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;プッシュ通知&lt;&#x2F;td&gt;&lt;td&gt;TPNS（SLAなし）&lt;&#x2F;td&gt;&lt;td&gt;月10,000件&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;Bot &#x2F; Webhook&lt;&#x2F;td&gt;&lt;td&gt;使える&lt;&#x2F;td&gt;&lt;td&gt;使える&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;スマホアプリ&lt;&#x2F;td&gt;&lt;td&gt;使える&lt;&#x2F;td&gt;&lt;td&gt;使える&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;SSO&lt;&#x2F;td&gt;&lt;td&gt;&lt;strong&gt;なし（2025年以降削除）&lt;&#x2F;strong&gt;&lt;&#x2F;td&gt;&lt;td&gt;あり&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;&#x2F;tbody&gt;&lt;&#x2F;table&gt;
+&lt;p&gt;&lt;strong&gt;Team Edition を採用。&lt;&#x2F;strong&gt; Enterprise Entry はメッセージ10,000件制限があり、Bot の diff 出力を流し続けるとすぐ到達する。SSO がないが個人1人なので問題なし。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;netutowakugou-cheng&quot;&gt;ネットワーク構成&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;tailscale&quot;&gt;Tailscale&lt;&#x2F;h3&gt;
+&lt;p&gt;全マシンを Tailscale で接続。外部にポートを開けない。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;MacBook ↔ 常設サーバ: Claude Code → Mattermost (8065&#x2F;tcp)&lt;&#x2F;li&gt;
+&lt;li&gt;MacBook ↔ ゲーミングPC: aider → Ollama (11434&#x2F;tcp)&lt;&#x2F;li&gt;
+&lt;li&gt;常設サーバ ↔ ゲーミングPC: aider Bot → Ollama (11434&#x2F;tcp)&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;常設サーバ側は Tailscale を Docker コンテナとして動かし、&lt;code&gt;network_mode: &quot;service:tailscale&quot;&lt;&#x2F;code&gt; で他のコンテナがそのネットワークスタックを共有する。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;coredns&quot;&gt;CoreDNS&lt;&#x2F;h3&gt;
+&lt;p&gt;Tailscale の IP を直打ちするのは辛いので、CoreDNS で内部名前解決する。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;ollama.home.arpa  → ゲーミングPC の Tailscale IP&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;mattermost.home.arpa → 常設サーバの Tailscale IP&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;CoreDNS も同じ docker-compose 内で動かす。Tailscale の MagicDNS でも良いが、自前で管理したい場合は CoreDNS が柔軟。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;setutoatupu-yu-ding&quot;&gt;セットアップ（予定）&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;gemingupc-windows&quot;&gt;ゲーミングPC（Windows）&lt;&#x2F;h3&gt;
+&lt;p&gt;Ollama 専用。GPU推論だけやる。&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;NVIDIA ドライバを最新に&lt;&#x2F;li&gt;
+&lt;li&gt;Ollama for Windows をインストール&lt;&#x2F;li&gt;
+&lt;li&gt;Tailscale をインストール&lt;&#x2F;li&gt;
+&lt;li&gt;Ollama のリッスンアドレスを変更&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;powershell&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;[&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;System.Environment&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;]&lt;&#x2F;span&gt;&lt;span&gt;::SetEnvironmentVariable&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;OLLAMA_HOST&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;0.0.0.0&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;Machine&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;)&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;ol start=&quot;5&quot;&gt;
+&lt;li&gt;qwen3.5 を pull&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;shellscript&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;ollama&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; pull qwen3.5&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;h3 id=&quot;chang-she-saba-proxmox-almalinux-lxc&quot;&gt;常設サーバ（Proxmox + AlmaLinux LXC）&lt;&#x2F;h3&gt;
+&lt;p&gt;Mattermost, CoreDNS, Tailscale, Bot 等の常駐サービスを集約。全て Docker コンテナとして動かす。&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;Proxmox 上に AlmaLinux LXC を作成（nesting=1 を有効化）&lt;&#x2F;li&gt;
+&lt;li&gt;Docker + Docker Compose をインストール&lt;&#x2F;li&gt;
+&lt;li&gt;各コンテナを起動&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;font-style: italic;&quot;&gt;# docker-compose.yml&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;services&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;  tailscale&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    image&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; tailscale&#x2F;tailscale&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    hostname&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; homelab&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    environment&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      -&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; TS_AUTHKEY=${TS_AUTHKEY}&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      -&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; TS_STATE_DIR=&#x2F;var&#x2F;lib&#x2F;tailscale&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      -&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; TS_USERSPACE=true&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    volumes&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      -&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; .&#x2F;tailscale:&#x2F;var&#x2F;lib&#x2F;tailscale&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    ports&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      -&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;8065:8065&amp;quot;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      -&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;53:53&#x2F;udp&amp;quot;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      -&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;53:53&#x2F;tcp&amp;quot;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    restart&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; unless-stopped&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;  mattermost&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    image&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; mattermost&#x2F;mattermost-team-edition&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    network_mode&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;service:tailscale&amp;quot;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    volumes&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      -&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; .&#x2F;mattermost&#x2F;data:&#x2F;mattermost&#x2F;data&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    restart&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; unless-stopped&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;  coredns&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    image&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; coredns&#x2F;coredns&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    network_mode&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;service:tailscale&amp;quot;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    volumes&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      -&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; .&#x2F;coredns:&#x2F;etc&#x2F;coredns&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    command&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; -conf &#x2F;etc&#x2F;coredns&#x2F;Corefile&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;&quot;&gt;    restart&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; unless-stopped&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;font-style: italic;&quot;&gt;  # aider Bot（要自作）&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;font-style: italic;&quot;&gt;  # Mattermost の Webhook を監視して&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;font-style: italic;&quot;&gt;  # Ollama (ゲーミングPC) に推論リクエストを投げる&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;h3 id=&quot;kuraiantoce-mac&quot;&gt;クライアント側（Mac）&lt;&#x2F;h3&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;shellscript&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;font-style: italic;&quot;&gt;# 直接 aider を使う場合&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;export&lt;&#x2F;span&gt;&lt;span&gt; OLLAMA_API_BASE&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span&gt;http:&#x2F;&#x2F;ollama.home.arpa:11434&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;aider&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; --model ollama&#x2F;qwen3.5&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Claude Code からは MCP サーバ経由で Mattermost に投稿する構成も考えられる。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;qwen3-5-nituite&quot;&gt;qwen3.5 について&lt;&#x2F;h2&gt;
+&lt;p&gt;RTX 3080 の VRAM 10GB で動くサイズが出ているかは要確認。
+aider の実装作業者として使う場合、設計ドキュメントへの指示追従性が重要。実際に試してみるしかない。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;qi-ninatuteirukoto&quot;&gt;気になっていること&lt;&#x2F;h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;ゲーミングPC の電気代&lt;&#x2F;strong&gt;。WoL で必要な時だけ起動したい
+&lt;ul&gt;
+&lt;li&gt;常設サーバの aider Bot から WoL パケットを飛ばせば良い&lt;&#x2F;li&gt;
+&lt;li&gt;「承認されたら WoL → Ollama 起動確認 → aider 実行 → 完了後シャットダウン」の自動化&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;strong&gt;qwen3.5 の VRAM 要件&lt;&#x2F;strong&gt;。10GB に収まるサイズ・量子化があるか&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;strong&gt;aider との相性&lt;&#x2F;strong&gt;。OpenAI互換APIで繋がるはずだが、モデルごとの癖がある&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;strong&gt;LXC + Docker の安定性&lt;&#x2F;strong&gt;。nesting=1 での Docker 動作に問題が出ないか&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;h2 id=&quot;duan-jie-de-nijin-meru&quot;&gt;段階的に進める&lt;&#x2F;h2&gt;
+&lt;ol&gt;
+&lt;li&gt;まず Ollama + qwen3.5 をゲーミングPC（Windows）に入れて動作確認&lt;&#x2F;li&gt;
+&lt;li&gt;Tailscale 経由で Mac の aider から繋いでみる&lt;&#x2F;li&gt;
+&lt;li&gt;ファイルベースの受け渡し（設計.md → aider --read）で分業を試す&lt;&#x2F;li&gt;
+&lt;li&gt;常設サーバに AlmaLinux LXC を作成、Docker 環境を構築&lt;&#x2F;li&gt;
+&lt;li&gt;Tailscale + Mattermost Team Edition + CoreDNS をコンテナで立てる&lt;&#x2F;li&gt;
+&lt;li&gt;aider Bot を開発して Mattermost 連携&lt;&#x2F;li&gt;
+&lt;li&gt;スマホからレビュー・承認のフローを構築&lt;&#x2F;li&gt;
+&lt;li&gt;WoL 自動化（承認 → 起動 → 実行 → シャットダウン）&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;p&gt;いきなり全部組むと辛いので、小さく始めて段階的に。&lt;&#x2F;p&gt;
+&lt;hr &#x2F;&gt;
+&lt;p&gt;というアイデアベースの構想を Claude にまとめてもらった。
+作ってどの程度仕事してくれるか見てみようかな。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>Orbstack 良さそう</title>
+        <published>2026-03-20T00:00:00+00:00</published>
+        <updated>2026-03-20T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260320-orbstack/"/>
+        <id>https://sekky89.github.io/20260320-orbstack/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260320-orbstack/">&lt;p&gt;ジェネリック Docker って色々あるけど &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;orbstack.dev&#x2F;&quot;&gt;Orbstack&lt;&#x2F;a&gt; はちょっと良さそうって話。
+本格的に使ってみてはない
+軽量、高速を謳ってるのでそこは期待できそう。&lt;&#x2F;p&gt;
+&lt;p&gt;でも商用用途では有償なのがなぁ。営利団体での利用が有償の条件と言われると &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;abiosoft&#x2F;colima&quot;&gt;colima&lt;&#x2F;a&gt; でも良いんじゃないかって気もしてくる。仕事で使えないんじゃなぁ。&lt;&#x2F;p&gt;
+&lt;p&gt;あと、コンテナエンジンのデスクトップUIの必要性に疑問。いらなくない？
+コンテナ基盤なんて CLI で十分。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>32インチ4K有機ELディスプレイを買った結果いい感じ(DELL AW3225QF)</title>
+        <published>2026-03-14T00:00:00+00:00</published>
+        <updated>2026-03-14T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260314-32-4k-display/"/>
+        <id>https://sekky89.github.io/20260314-32-4k-display/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260314-32-4k-display/">&lt;p&gt;別に湾曲してなくともよかったんだけどな。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;sekky89.github.io&#x2F;20260211-34-wide-display&#x2F;&quot;&gt;34インチワイドディスプレイを買ってみたが失敗した話(DELL AW3425DW)&lt;&#x2F;a&gt; のオチ。結局 32インチ4Kを買い直した。お財布にダイレクトアタックつらい。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;dell-aw3225qf-nituite&quot;&gt;Dell AW3225QF について&lt;&#x2F;h2&gt;
+&lt;p&gt;今回はめっちゃ調べました。安易に買ってまた失敗したくないし。このディスプレイ、公式には Mac 非対応らしいです。ファームウェアのアップデートも Windows からでないとできない。チラつくとの噂も、問題ないとの噂もあり正直賭け。&lt;&#x2F;p&gt;
+&lt;p&gt;加えて、入力も HDMIx2, DPx1。USB-C はない。&lt;&#x2F;p&gt;
+&lt;p&gt;ただ、選定基準として、32インチ4K を前提にどうせなら有機ELのものが欲しかった。競合は ASUS や MSI から出ているが高い。&lt;&#x2F;p&gt;
+&lt;p&gt;購入時点で一番安く 32インチ4K有機ELを満たしたのが Dell のコレ。湾曲してない方が仕事的には助かるけどお財布事情には抗えない。&lt;&#x2F;p&gt;
+&lt;p&gt;だいぶ前から自宅のディスプレイは Dell で不満を感じたことはなかったので AW3425DW は完全に私の買い物ミスと割り切ることにして今回も Dell にした。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;shi-tutemitedouka&quot;&gt;使ってみてどうか？&lt;&#x2F;h2&gt;
+&lt;p&gt;快適です。文字の滲みはなくストレスフリーになりました。チラつくような噂ありましたが発生したことありません。&lt;&#x2F;p&gt;
+&lt;p&gt;といいたいところですが、嘘です。リモートデスクトップでウィンドウを最大化するとチラつきます。発生シチュエーションが限定的なので支障はないです。ウィンドウ小さくしておけば発生しないし。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;jie-sok-xing&quot;&gt;接続性&lt;&#x2F;h2&gt;
+&lt;p&gt;前述の通り、HDMI と DP しかないので、UGREEN Revodok Max 213 経由で DP 接続するようにした。Mac の接続は USB-C (Thunderbolt) 1本になるので、仕事終わったら私用に繋ぎ変えて使ってる。&lt;&#x2F;p&gt;
+&lt;p&gt;Windows は KVM スイッチで切り替える。最近起動してないからまだ配線してないけど。&lt;&#x2F;p&gt;
+&lt;p&gt;HDMI は Switch 2 に繋いでる。最近遊んでないけど。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;sonota&quot;&gt;その他&lt;&#x2F;h2&gt;
+&lt;p&gt;ScreenBar Halo 2 を乗せて手元もいい感じに明るくできたので仕事環境はいい感じ。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>Claude 君と練ったバックエンドアーキテクチャ</title>
+        <published>2026-03-14T00:00:00+00:00</published>
+        <updated>2026-03-14T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260314-backend-with-claude/"/>
+        <id>https://sekky89.github.io/20260314-backend-with-claude/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260314-backend-with-claude/">&lt;p&gt;ついに遊び半分で Claude Code (Pro) に課金してしまった。課金してしまったからには遊ばねば。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;porisi&quot;&gt;ポリシー&lt;&#x2F;h2&gt;
+&lt;p&gt;個人的なポリシーとして今回は以下のようなルールを設けた。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;なるべく宣言的&lt;&#x2F;li&gt;
+&lt;li&gt;なるべく自動生成ツールを活用&lt;&#x2F;li&gt;
+&lt;li&gt;SOLID 原則&lt;&#x2F;li&gt;
+&lt;li&gt;Clean Architecture 風&lt;&#x2F;li&gt;
+&lt;li&gt;DDD 風&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;この縛りを設けて、AI開発による不確定部分を減らすこととトークンの節約を試みた。トークンの節約についてはできたのかできてないのかわかってない。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;ji-shu-sutatuku&quot;&gt;技術スタック&lt;&#x2F;h2&gt;
+&lt;p&gt;結局以下のような構成に。これも Claude に書かせた表。&lt;&#x2F;p&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;カテゴリ&lt;&#x2F;th&gt;&lt;th&gt;技術&lt;&#x2F;th&gt;&lt;th&gt;バージョン&lt;&#x2F;th&gt;&lt;&#x2F;tr&gt;&lt;&#x2F;thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;言語&lt;&#x2F;td&gt;&lt;td&gt;Go&lt;&#x2F;td&gt;&lt;td&gt;1.26+&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;Webフレームワーク&lt;&#x2F;td&gt;&lt;td&gt;Gofiber v3&lt;&#x2F;td&gt;&lt;td&gt;最新安定版&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;データベースドライバ&lt;&#x2F;td&gt;&lt;td&gt;jackc&#x2F;pgx v5&lt;&#x2F;td&gt;&lt;td&gt;v5.x&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;DI&lt;&#x2F;td&gt;&lt;td&gt;google&#x2F;wire&lt;&#x2F;td&gt;&lt;td&gt;最新安定版&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;ID生成&lt;&#x2F;td&gt;&lt;td&gt;lucsky&#x2F;cuid&lt;&#x2F;td&gt;&lt;td&gt;最新安定版&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;コード生成&lt;&#x2F;td&gt;&lt;td&gt;oapi-codegen, sqlc&lt;&#x2F;td&gt;&lt;td&gt;最新安定版&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;Linter&lt;&#x2F;td&gt;&lt;td&gt;golangci-lint&lt;&#x2F;td&gt;&lt;td&gt;最新安定版&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;アーキテクチャLinter&lt;&#x2F;td&gt;&lt;td&gt;go-arch-lint&lt;&#x2F;td&gt;&lt;td&gt;最新安定版&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;テスト&lt;&#x2F;td&gt;&lt;td&gt;標準testing + mockgen&lt;&#x2F;td&gt;&lt;td&gt;—&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;デプロイ&lt;&#x2F;td&gt;&lt;td&gt;AWS Lambda (linux&#x2F;arm64)&lt;&#x2F;td&gt;&lt;td&gt;—&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;&#x2F;tbody&gt;&lt;&#x2F;table&gt;
+&lt;p&gt;細かなところで、sqlc-gen-crud や sqldef が抜けてたりするのはご愛嬌。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;mermaid bg-inherit&quot; translate=&quot;no&quot;&gt;
+  block-beta
+columns 4
+
+RT[&amp;quot;AWS Lambda + Web Adapter&amp;quot;]:4
+
+FIBER[&amp;quot;Gofiber v3&amp;quot;]:2 OAP[&amp;quot;oapi-codegen&amp;quot;]:1 RED[&amp;quot;redocly&amp;quot;]:1
+
+WIRE[&amp;quot;wire&amp;quot;]:2 MOCK[&amp;quot;mockgen&amp;quot;]:2
+
+CUID[&amp;quot;lucsky&amp;#x2F;cuid&amp;quot;]:4
+
+PGX[&amp;quot;pgx v5&amp;quot;]:1 SQLC[&amp;quot;sqlc&amp;quot;]:1 CRUD[&amp;quot;sqlc-gen-crud&amp;quot;]:1 SDEF[&amp;quot;sqldef&amp;quot;]:1
+
+DB[(&amp;quot;PostgreSQL（Aurora DSQL）&amp;quot;)]:4
+
+LINT[&amp;quot;golangci-lint&amp;quot;]:2 ARCH[&amp;quot;go-arch-lint&amp;quot;]:1 TEST[&amp;quot;標準 testing&amp;quot;]:1
+
+style RT fill:#4a90d9,color:#fff
+style FIBER fill:#7bc96f,color:#fff
+style OAP fill:#7bc96f,color:#fff
+style RED fill:#7bc96f,color:#fff
+style WIRE fill:#f5a623,color:#fff
+style MOCK fill:#f5a623,color:#fff
+style CUID fill:#d0021b,color:#fff
+style PGX fill:#9b59b6,color:#fff
+style SQLC fill:#9b59b6,color:#fff
+style CRUD fill:#9b59b6,color:#fff
+style SDEF fill:#9b59b6,color:#fff
+style DB fill:#34495e,color:#fff
+style LINT fill:#95a5a6,color:#fff
+style ARCH fill:#95a5a6,color:#fff
+style TEST fill:#95a5a6,color:#fff
+&lt;&#x2F;pre&gt;
+&lt;p&gt;Claude 君に作らせたいい加減な図。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;xuan-ding-jing-wei&quot;&gt;選定経緯&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;go&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;go.dev&#x2F;&quot;&gt;Go&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;今時の Web アプリケーションならもう Go かなと。パフォーマンス極めるなら rust かもしれないけど今回は Go にしてみた。シングルバイナリゆえのコールドスタートの速さ、デプロイの容易さが良い。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;fiber-oapi-codegen-redocly-aws-lambda-web-adapter&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;gofiber.io&#x2F;&quot;&gt;fiber&lt;&#x2F;a&gt;, &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;oapi-codegen&#x2F;oapi-codegen&quot;&gt;oapi-codegen&lt;&#x2F;a&gt;, &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;redocly.com&#x2F;&quot;&gt;redocly&lt;&#x2F;a&gt;, &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;awslabs&#x2F;aws-lambda-web-adapter&quot;&gt;AWS Lambda Web Adapter&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;gin が主流かもしれないが express インスパイアで生まれた fiber を採用。早いらしい。実測はしてない。ミドルウェアが充実しており、Go 標準 Http ハンドラの Adapter も提供されている。&lt;&#x2F;p&gt;
+&lt;p&gt;OpenAPI 定義からの自動生成には oapi-codegen を採用。各サーバ用の実装を生成できるが、fiber は対応していない。代わりに Strict Server Interface の生成ができるようになっている。これは標準 Http ハンドラとして生成されるので Adapter を噛ませれば fiber にも組み込める。&lt;&#x2F;p&gt;
+&lt;p&gt;OpenAPI 定義そのもののドキュメント生成兼 linter として redocly を採用。Claude 君には OpenAPI 定義変えたら redocly チェックしてエラー解消してねと指示しておいた。&lt;&#x2F;p&gt;
+&lt;p&gt;Lambda で動かすことを前提に選定したが、個別ハンドラではなく API サーバ丸ごと作って上げる方式を採用。ローカルでの起動が容易など可搬性が良く、リソース増えすぎないので CDK にも優しい。そのままでは Lambda 上で動作しないが、そこは AWS Lambda Web Adapter をレイヤーないしはコンテナに組み入れることでアプリに手を加えることなく対応できる。（数msのレイテンシは犠牲になるが・・・）&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;sqlc-pgx-sqlc-gen-crud-sqldef&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;sqlc.dev&#x2F;&quot;&gt;sqlc&lt;&#x2F;a&gt;, &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;jackc&#x2F;pgx&quot;&gt;pgx&lt;&#x2F;a&gt;, &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;sqlc-dev&#x2F;sqlc-gen-crud&quot;&gt;sqlc-gen-crud&lt;&#x2F;a&gt;, &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;sqldef&#x2F;sqldef&quot;&gt;sqldef&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;DB 周りは RDB を前提に選定。sqldef で DDL を管理し、そこから sqlc と migration を自動生成。sqlc-gen-crud で標準 CRUD を自動生成。平仄が気になる部分は自動生成で捩じ伏せる。クエリが複雑化したり動的クエリが必要となったら &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;doug-martin&#x2F;goqu&quot;&gt;goqu&lt;&#x2F;a&gt; と組み合わせるのも良さそう。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;go-arch-lint&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;fe3dback&#x2F;go-arch-lint&quot;&gt;go-arch-lint&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;Clean Architecture になっているよねチェッカー。依存方向を定義でき、違反を検出してくれる。SOLID にしろって指示していてもできたコードは依存パッケージの違反がそこそこあったので導入。機械的な仕組みでエラー検出してくれるツールは信頼できる。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;wire&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;google&#x2F;wire&quot;&gt;wire&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;DI にはコンパイル時に静的 DI できる wire を選択。最悪なくとも良いがあると楽という程度の DI なのが良い。&lt;&#x2F;p&gt;
+&lt;p&gt;なぜメンテが停止している wire を？と思われるかもしれないが、メンテが停止しているというより現時点では「完成」だと思う。go のエコシステムが大きく変わらない限り今の wire でずっと使える気がする。&lt;&#x2F;p&gt;
+&lt;p&gt;他にも Dynamic な DI に対応したライブラリには &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;uber-go&#x2F;fx&quot;&gt;fx&lt;&#x2F;a&gt; や &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;samber&#x2F;do&quot;&gt;do&lt;&#x2F;a&gt; などあるが、実装が DI ライブラリに依存してしまう。これが気に入らなかった。その点 wire はプロバイダの定義は必要なものの、コンパイル時に静的 DI するのでランタイムエラーに繋がりにくく、実装も DI ライブラリに依存しない。&lt;&#x2F;p&gt;
+&lt;p&gt;プレーンな go のインタフェースで各層の実装ができるので &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;uber-go&#x2F;mock&quot;&gt;mockgen&lt;&#x2F;a&gt; 等でのテストモック自動生成との親和性も良い。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;sonota&quot;&gt;その他&lt;&#x2F;h3&gt;
+&lt;p&gt;ロガーは fiber 内臓ミドルウェアで出力。パフォーマンス上げたければ &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;uber-go&#x2F;zap&quot;&gt;zap&lt;&#x2F;a&gt; にしても良い。&lt;&#x2F;p&gt;
+&lt;p&gt;Clean Architecture だと presentor や usecase interactor も定義するものだが、今回はシンプルなので省略。大規模になってきたり、再利用性を高めたい場合は追加すれば良いと考える。&lt;&#x2F;p&gt;
+&lt;p&gt;usecase の interface 作っても良かったが、go の思想的に interface は利用する側が定義するものとされているため今回はそちらを優先。&lt;br &#x2F;&gt;
+最初から再利用性を考慮して interface を定義して、mockgen でモック作って並行でテスト作っても良いと考えている。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;kai-fa-ti-yan&quot;&gt;開発体験&lt;&#x2F;h2&gt;
+&lt;p&gt;機能・非機能要件を与え、domain model と repository interface 定義、usecase の定義、OpenAPI の定義、DB テーブルの定義を進めた上でそれぞれレビュー。
+その上で、各自動生成ツールで吐いたコードを与えた要件に合わせて繋ぎ合わせる実装をさせるイメージ。実装も当然レビューはする。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;mermaid bg-inherit&quot; translate=&quot;no&quot;&gt;
+  flowchart LR
+subgraph 手書き[&amp;quot;🤖 AIが書く &amp;#x2F; 人がレビュー&amp;quot;]
+OA[OpenAPI 定義&amp;lt;br&amp;#x2F;&amp;gt;openapi.yaml]
+DDL[DDL&amp;lt;br&amp;#x2F;&amp;gt;schema.sql]
+QR[クエリ定義&amp;lt;br&amp;#x2F;&amp;gt;queries&amp;#x2F;*.sql]
+DM[ドメイン層&amp;lt;br&amp;#x2F;&amp;gt;entity &amp;#x2F; repository IF&amp;lt;br&amp;#x2F;&amp;gt;&amp;#x2F; service]
+UC[ユースケース層&amp;lt;br&amp;#x2F;&amp;gt;usecase]
+WR[DI 定義&amp;lt;br&amp;#x2F;&amp;gt;wire.go]
+end
+
+subgraph 自動生成[&amp;quot;⚙️ ツールが生成するもの&amp;quot;]
+HC[ハンドラ IF&amp;lt;br&amp;#x2F;&amp;gt;oapi-codegen]
+MD[モデル&amp;lt;br&amp;#x2F;&amp;gt;sqlc]
+CR[CRUD&amp;lt;br&amp;#x2F;&amp;gt;sqlc-gen-crud]
+QC[クエリコード&amp;lt;br&amp;#x2F;&amp;gt;sqlc]
+WG[DI ワイヤリング&amp;lt;br&amp;#x2F;&amp;gt;wire]
+MK[テストモック&amp;lt;br&amp;#x2F;&amp;gt;mockgen]
+end
+
+OA --&amp;gt; HC
+DDL --&amp;gt; MD
+DDL --&amp;gt; CR
+QR --&amp;gt; QC
+DM --&amp;gt; MK
+WR --&amp;gt; WG
+DDL -.-&amp;gt;|sqldef| DB[(実 DB)]
+
+subgraph 検証[&amp;quot;🔍 機械的チェック&amp;quot;]
+RL[redocly]
+GL[golangci-lint]
+AL[go-arch-lint]
+end
+
+OA --&amp;gt; RL
+HC &amp;amp; DM &amp;amp; CR &amp;amp; QC &amp;amp; WG &amp;amp; MK --&amp;gt; AI{{&amp;quot;🤖 Claude&amp;lt;br&amp;#x2F;&amp;gt;繋ぎ合わせ実装&amp;quot;}}
+DM &amp;amp; UC --&amp;gt; AI
+AI --&amp;gt; GL
+AI --&amp;gt; AL
+&lt;&#x2F;pre&gt;
+&lt;p&gt;自動生成ツールは設定と定義が正しければ生成物を疑う余地はないので、全てをAIに生成させることによる生成コードの不確定さを排除できる。あとはレビュー観点のうち機械的にチェックできるものは極力 linter で排除することで人目による確認の負荷を減らすことができていると考える。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>CDK でアカウントセキュリティ設定</title>
+        <published>2026-03-14T00:00:00+00:00</published>
+        <updated>2026-03-14T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260314-cdk-with-account-settings/"/>
+        <id>https://sekky89.github.io/20260314-cdk-with-account-settings/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260314-cdk-with-account-settings/">&lt;p&gt;デフォルトがセキュアじゃない。必要になったら開けるからデフォルトはセキュアにしておいてくれよ・・・と思わなくもない。加えて、この辺の設定、CDKだとカスタムリソースでないと設定できないものばっか。&lt;&#x2F;p&gt;
+&lt;p&gt;設定するのは以下。一般的なものなのでコード丸ごと備忘として貼っておこうかと。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;EBS パブリックアクセスをブロック&lt;&#x2F;li&gt;
+&lt;li&gt;EBS 暗号化をデフォルトで有効化&lt;&#x2F;li&gt;
+&lt;li&gt;S3 パブリックアクセスをブロック&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;typescript&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;import&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F38BA8;&quot;&gt; *&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt; as&lt;&#x2F;span&gt;&lt;span&gt; ec2&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt; from&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;aws-cdk-lib&#x2F;aws-ec2&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;import&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F38BA8;&quot;&gt; *&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt; as&lt;&#x2F;span&gt;&lt;span&gt; iam&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt; from&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;aws-cdk-lib&#x2F;aws-iam&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;import&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F38BA8;&quot;&gt; *&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt; as&lt;&#x2F;span&gt;&lt;span&gt; cdk&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt; from&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;aws-cdk-lib&#x2F;core&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;import&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F38BA8;&quot;&gt; *&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt; as&lt;&#x2F;span&gt;&lt;span&gt; cr&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt; from&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;aws-cdk-lib&#x2F;custom-resources&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;import type&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt; {&lt;&#x2F;span&gt;&lt;span&gt; Construct&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt; }&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt; from&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;constructs&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;export class&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F9E2AF;font-style: italic;&quot;&gt; AccountSettingStack&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt; extends&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F9E2AF;font-style: italic;&quot;&gt; cdk&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F9E2AF;font-style: italic;&quot;&gt;Stack&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt; {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;  constructor&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color: #EBA0AC;font-style: italic;&quot;&gt;scope&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F9E2AF;font-style: italic;&quot;&gt; Construct&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span style=&quot;color: #EBA0AC;font-style: italic;&quot;&gt; id&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt; string&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span style=&quot;color: #EBA0AC;font-style: italic;&quot;&gt; props&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;?:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F9E2AF;font-style: italic;&quot;&gt; cdk&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F9E2AF;font-style: italic;&quot;&gt;StackProps&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;) {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;    super&lt;&#x2F;span&gt;&lt;span&gt;(scope&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span&gt; id&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span&gt; props)&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;    const&lt;&#x2F;span&gt;&lt;span&gt; accountId&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt; =&lt;&#x2F;span&gt;&lt;span&gt; cdk&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;Stack&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;of&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F38BA8;&quot;&gt;this&lt;&#x2F;span&gt;&lt;span&gt;)&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;account&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;font-weight: bold;&quot;&gt;    new&lt;&#x2F;span&gt;&lt;span&gt; ec2&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;CfnSnapshotBlockPublicAccess&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F38BA8;&quot;&gt;this&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;EbsBlockPublicAccess&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;, {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      state&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;block-all-sharing&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;    }&lt;&#x2F;span&gt;&lt;span&gt;)&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;font-weight: bold;&quot;&gt;    new&lt;&#x2F;span&gt;&lt;span&gt; cr&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;AwsCustomResource&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F38BA8;&quot;&gt;this&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;EnableEbsEncryptionByDefault&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;, {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      onCreate&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt; {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        service&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;EC2&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        action&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;enableEbsEncryptionByDefault&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        physicalResourceId&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span&gt; cr&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;PhysicalResourceId&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;of&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;EnableEbsEncryptionByDefault&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      onDelete&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt; {&lt;&#x2F;span&gt;&lt;span&gt; service&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;EC2&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span&gt; action&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;disableEbsEncryptionByDefault&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt; },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      policy&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span&gt; cr&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;AwsCustomResourcePolicy&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;fromStatements&lt;&#x2F;span&gt;&lt;span&gt;([&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;font-weight: bold;&quot;&gt;        new&lt;&#x2F;span&gt;&lt;span&gt; iam&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;PolicyStatement&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;{&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          actions&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span&gt; [&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;ec2:EnableEbsEncryptionByDefault&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;ec2:DisableEbsEncryptionByDefault&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;]&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          resources&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span&gt; [&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;*&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;]&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;        }&lt;&#x2F;span&gt;&lt;span&gt;)&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      ])&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;    }&lt;&#x2F;span&gt;&lt;span&gt;)&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;font-weight: bold;&quot;&gt;    new&lt;&#x2F;span&gt;&lt;span&gt; cr&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;AwsCustomResource&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color: #F38BA8;&quot;&gt;this&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;S3AccountPublicAccessBlock&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;, {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      onCreate&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt; {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        service&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;S3Control&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        action&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;putPublicAccessBlock&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        parameters&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt; {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          AccountId&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span&gt; accountId&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          PublicAccessBlockConfiguration&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt; {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;            BlockPublicAcls&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #FAB387;&quot;&gt; true&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;            BlockPublicPolicy&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #FAB387;&quot;&gt; true&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;            IgnorePublicAcls&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #FAB387;&quot;&gt; true&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;            RestrictPublicBuckets&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #FAB387;&quot;&gt; true&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;          },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;        },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        physicalResourceId&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span&gt; cr&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;PhysicalResourceId&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;of&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;S3AccountPublicAccessBlock&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;)&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      onDelete&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt; {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        service&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;S3Control&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        action&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;deletePublicAccessBlock&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        parameters&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt; {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          AccountId&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span&gt; accountId&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;        },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;      },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      policy&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span&gt; cr&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;AwsCustomResourcePolicy&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;fromStatements&lt;&#x2F;span&gt;&lt;span&gt;([&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;font-weight: bold;&quot;&gt;        new&lt;&#x2F;span&gt;&lt;span&gt; iam&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt;PolicyStatement&lt;&#x2F;span&gt;&lt;span&gt;(&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;{&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          effect&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span&gt; iam&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span&gt;Effect&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;.&lt;&#x2F;span&gt;&lt;span style=&quot;color: #FAB387;&quot;&gt;ALLOW&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          actions&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span&gt; [&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;s3:PutAccountPublicAccessBlock&amp;quot;&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; &amp;quot;s3:DeleteAccountPublicAccessBlock&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;]&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          resources&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;:&lt;&#x2F;span&gt;&lt;span&gt; [&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;*&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt;]&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;        }&lt;&#x2F;span&gt;&lt;span&gt;)&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      ])&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;    }&lt;&#x2F;span&gt;&lt;span&gt;)&lt;&#x2F;span&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;  }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #9399B2;&quot;&gt;}&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>Claude 君と練ったフロントエンドアーキテクチャ</title>
+        <published>2026-03-14T00:00:00+00:00</published>
+        <updated>2026-03-14T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260314-frontend-with-claude/"/>
+        <id>https://sekky89.github.io/20260314-frontend-with-claude/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260314-frontend-with-claude/">&lt;p&gt;&lt;a href=&quot;https:&#x2F;&#x2F;sekky89.github.io&#x2F;20260314-backend-with-claude&#x2F;&quot;&gt;バックエンド編&lt;&#x2F;a&gt;の続き。フロントエンド側の選定についても書いておく。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;porisi&quot;&gt;ポリシー&lt;&#x2F;h2&gt;
+&lt;p&gt;バックエンド同様、以下を基本方針とした。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;なるべく宣言的&lt;&#x2F;li&gt;
+&lt;li&gt;なるべく自動生成ツールを活用&lt;&#x2F;li&gt;
+&lt;li&gt;AI が書きやすく、人がレビューしやすい構成&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;加えてフロントエンド固有のルールとして、AI が生成するコードのブレを減らすために攻めたコーディング規約を設けた。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;ji-shu-sutatuku&quot;&gt;技術スタック&lt;&#x2F;h2&gt;
+&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;カテゴリ&lt;&#x2F;th&gt;&lt;th&gt;技術&lt;&#x2F;th&gt;&lt;th&gt;バージョン&lt;&#x2F;th&gt;&lt;&#x2F;tr&gt;&lt;&#x2F;thead&gt;&lt;tbody&gt;
+&lt;tr&gt;&lt;td&gt;ランタイム&lt;&#x2F;td&gt;&lt;td&gt;Bun&lt;&#x2F;td&gt;&lt;td&gt;最新安定版&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;フレームワーク&lt;&#x2F;td&gt;&lt;td&gt;React&lt;&#x2F;td&gt;&lt;td&gt;19.x&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;ビルドツール&lt;&#x2F;td&gt;&lt;td&gt;Vite + Rolldown&lt;&#x2F;td&gt;&lt;td&gt;最新安定版&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;言語&lt;&#x2F;td&gt;&lt;td&gt;TypeScript&lt;&#x2F;td&gt;&lt;td&gt;5.x (strict)&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;ルーティング&lt;&#x2F;td&gt;&lt;td&gt;React Router&lt;&#x2F;td&gt;&lt;td&gt;v7&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;サーバー状態管理&lt;&#x2F;td&gt;&lt;td&gt;TanStack Query&lt;&#x2F;td&gt;&lt;td&gt;v5&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;クライアント状態管理&lt;&#x2F;td&gt;&lt;td&gt;Zustand&lt;&#x2F;td&gt;&lt;td&gt;v5&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;UIコンポーネント&lt;&#x2F;td&gt;&lt;td&gt;Radix UI + shadcn&#x2F;ui&lt;&#x2F;td&gt;&lt;td&gt;最新安定版&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;スタイリング&lt;&#x2F;td&gt;&lt;td&gt;Tailwind CSS&lt;&#x2F;td&gt;&lt;td&gt;v4&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;フォーム管理&lt;&#x2F;td&gt;&lt;td&gt;React Hook Form + Valibot&lt;&#x2F;td&gt;&lt;td&gt;v7 &#x2F; v1&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;API型生成&lt;&#x2F;td&gt;&lt;td&gt;openapi-typescript + @hey-api&#x2F;openapi-ts&lt;&#x2F;td&gt;&lt;td&gt;最新安定版&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;tr&gt;&lt;td&gt;コード品質&lt;&#x2F;td&gt;&lt;td&gt;oxfmt &#x2F; oxlint&lt;&#x2F;td&gt;&lt;td&gt;最新安定版&lt;&#x2F;td&gt;&lt;&#x2F;tr&gt;
+&lt;&#x2F;tbody&gt;&lt;&#x2F;table&gt;
+&lt;h2 id=&quot;xuan-ding-jing-wei&quot;&gt;選定経緯&lt;&#x2F;h2&gt;
+&lt;h3 id=&quot;bun&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;bun.sh&#x2F;&quot;&gt;Bun&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;npm &#x2F; yarn &#x2F; pnpm ではなく Bun。速い。それだけで十分な理由になる。パッケージマネージャ、テストランナー、スクリプトランナーを一本化できるのも良い。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;react-19-vite-rolldown&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;react.dev&#x2F;&quot;&gt;React&lt;&#x2F;a&gt; 19 + &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;vite.dev&#x2F;&quot;&gt;Vite&lt;&#x2F;a&gt; + &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;rolldown.rs&#x2F;&quot;&gt;Rolldown&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;Next.js は今回不要。SPA で十分だし、SSR&#x2F;SSG の複雑さを持ち込みたくなかった。CloudFront + S3 に置くだけのシンプルなデプロイにしたかった。&lt;&#x2F;p&gt;
+&lt;p&gt;ビルドツールは Vite。バンドラが Rolldown に移行しつつあり、esbuild + Rollup の二重構成が解消されていく方向なのも良い。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;react-compiler&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;react.dev&#x2F;learn&#x2F;react-compiler&quot;&gt;React Compiler&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;React 19 + React Compiler (Babel plugin) を有効化。これにより &lt;code&gt;useMemo&lt;&#x2F;code&gt; &#x2F; &lt;code&gt;useCallback&lt;&#x2F;code&gt; の手動最適化が不要になった。AI にコードを書かせる上で「ここは memo 化すべきか」の判断を省けるのは大きい。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;tanstack-query-zustand&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;tanstack.com&#x2F;query&quot;&gt;TanStack Query&lt;&#x2F;a&gt; + &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;zustand.docs.pmnd.rs&#x2F;&quot;&gt;Zustand&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;状態管理は「サーバー状態」と「クライアント状態」を明確に分離した。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;サーバー状態（API データ）&lt;&#x2F;strong&gt; → TanStack Query: キャッシュ、再取得、楽観的更新を一元管理&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;strong&gt;クライアント状態（UI の状態）&lt;&#x2F;strong&gt; → Zustand: サイドバー開閉、選択中のテナントなど最小限の状態&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;Zustand にAPI呼び出しを持たせない。非同期は TanStack Query に任せる。この境界を明確にしておくと AI が迷わない。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;shadcn-ui-radix-ui-tailwind-css-v4&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;ui.shadcn.com&#x2F;&quot;&gt;shadcn&#x2F;ui&lt;&#x2F;a&gt; + &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;www.radix-ui.com&#x2F;&quot;&gt;Radix UI&lt;&#x2F;a&gt; + &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;tailwindcss.com&#x2F;&quot;&gt;Tailwind CSS&lt;&#x2F;a&gt; v4&lt;&#x2F;h3&gt;
+&lt;p&gt;UIコンポーネントは shadcn&#x2F;ui を採用。Radix UI ベースでアクセシビリティが担保されており、コピペベースなのでカスタマイズが容易。Tailwind v4 との相性も良い。&lt;&#x2F;p&gt;
+&lt;p&gt;CSS-in-JS は採用しない。Tailwind のユーティリティクラスで統一することで、AI が生成するスタイルの一貫性を保てる。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;valibot-react-hook-form&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;valibot.dev&#x2F;&quot;&gt;Valibot&lt;&#x2F;a&gt; + &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;react-hook-form.com&#x2F;&quot;&gt;React Hook Form&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;バリデーションには Valibot を選択。&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;zod.dev&#x2F;&quot;&gt;Zod&lt;&#x2F;a&gt; でも良かったが、Valibot はツリーシェイキングに優れバンドルサイズが小さい。&lt;code&gt;InferOutput&lt;&#x2F;code&gt; で型を導出できるので手書きの型定義が不要。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;openapi-typescript-hey-api-openapi-ts&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;openapi-ts.dev&#x2F;&quot;&gt;openapi-typescript&lt;&#x2F;a&gt; + &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;heyapi.dev&#x2F;&quot;&gt;@hey-api&#x2F;openapi-ts&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;バックエンドの OpenAPI 定義から TypeScript の型とクライアントスキーマを自動生成する。バックエンド記事で触れた oapi-codegen と同じ OpenAPI 定義が源泉になるので、フロント・バックで型の不整合が起きない。&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;oxlint-oxfmt&quot;&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;oxc.rs&#x2F;&quot;&gt;oxlint + oxfmt&lt;&#x2F;a&gt;&lt;&#x2F;h3&gt;
+&lt;p&gt;ESLint + Prettier ではなく Ox 系に統一。圧倒的に速い。設定ファイルもシンプル。&lt;&#x2F;p&gt;
+&lt;p&gt;Ox 系で以下の攻めたルールを設定した。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;any&lt;&#x2F;code&gt; 型禁止（&lt;code&gt;unknown&lt;&#x2F;code&gt; + 型ガードで代替）&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;let&lt;&#x2F;code&gt; 原則禁止（&lt;code&gt;const&lt;&#x2F;code&gt; で統一）&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;function&lt;&#x2F;code&gt; 宣言禁止（アロー関数で統一）&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;tooling での強制が難しいものは規約として設けた。&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;for&lt;&#x2F;code&gt; &#x2F; &lt;code&gt;while&lt;&#x2F;code&gt; 原則禁止（配列メソッドで代替）&lt;&#x2F;li&gt;
+&lt;li&gt;過剰な関数分割の禁止（1画面1コンポーネント + ローカルヘルパーが基本）&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;AI に書かせると表現にブレが出やすい部分を機械的に潰す意図。選択肢を減らすことで生成コードの一貫性が上がる。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;kai-fa-ti-yan&quot;&gt;開発体験&lt;&#x2F;h2&gt;
+&lt;p&gt;バックエンド同様、OpenAPI 定義を起点に型を自動生成し、AI が実装、linter でチェックする流れ。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;mermaid bg-inherit&quot; translate=&quot;no&quot;&gt;
+  flowchart LR
+subgraph 定義[&amp;quot;🤖 AIが書く &amp;#x2F; 人がレビュー&amp;quot;]
+OA[OpenAPI 定義&amp;lt;br&amp;#x2F;&amp;gt;openapi.yaml]
+PG[ページ&amp;lt;br&amp;#x2F;&amp;gt;コンポーネント]
+ST[ストア&amp;lt;br&amp;#x2F;&amp;gt;Zustand]
+HK[カスタムフック]
+end
+
+subgraph 自動生成[&amp;quot;⚙️ ツールが生成するもの&amp;quot;]
+TP[API 型定義&amp;lt;br&amp;#x2F;&amp;gt;openapi-typescript]
+SC[API スキーマ&amp;lt;br&amp;#x2F;&amp;gt;@hey-api&amp;#x2F;openapi-ts]
+UI[UI コンポーネント&amp;lt;br&amp;#x2F;&amp;gt;shadcn&amp;#x2F;ui]
+end
+
+OA --&amp;gt; TP
+OA --&amp;gt; SC
+
+subgraph 検証[&amp;quot;🔍 機械的チェック&amp;quot;]
+OX[oxlint]
+FM[oxfmt]
+TC[TypeScript&amp;lt;br&amp;#x2F;&amp;gt;型チェック]
+end
+
+TP &amp;amp; SC &amp;amp; UI --&amp;gt; AI{{&amp;quot;🤖 Claude&amp;lt;br&amp;#x2F;&amp;gt;実装&amp;quot;}}
+PG &amp;amp; ST &amp;amp; HK --&amp;gt; AI
+AI --&amp;gt; OX
+AI --&amp;gt; FM
+AI --&amp;gt; TC
+&lt;&#x2F;pre&gt;
+&lt;p&gt;バックエンドほど自動生成の層は厚くないが、OpenAPI 起点の型生成と攻めた linter ルールで AI 生成コードの品質を担保している。コーディング規約で選択肢を絞ることで、レビュー時に「書き方の違い」ではなく「ロジックの正しさ」に集中できる。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;sonota&quot;&gt;その他&lt;&#x2F;h2&gt;
+&lt;p&gt;この記事、途中で書くの疲れて claude に生成させました。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>sqldefが良さそう。</title>
+        <published>2026-03-14T00:00:00+00:00</published>
+        <updated>2026-03-14T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260314-sqldef/"/>
+        <id>https://sekky89.github.io/20260314-sqldef/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260314-sqldef/">&lt;p&gt;マイグレーションツールの答えが出た（2026-03現在）&lt;&#x2F;p&gt;
+&lt;p&gt;claude で遊んでた時に DB Migration Tool を調査させたら &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;sqldef&#x2F;sqldef&quot;&gt;sqldef&lt;&#x2F;a&gt; を提案してきた。&lt;br &#x2F;&gt;
+この手の汎用マイグレーションツールは、sql-migrate までしか知らなかったので調べてみた。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;cong-lai-xing-nomaiguresiyon&quot;&gt;従来型のマイグレーション&lt;&#x2F;h2&gt;
+&lt;p&gt;RDBMS のマイグレーションツールあるあるで、差分をパッチで当てていくものが多い。この形の何が気に食わないのかと言うと、完全なDDLが管理されない。最新のDB定義はDB上にしかなく、ソース管理には最初に作ったものと差分が蓄積していく。&lt;br &#x2F;&gt;
+Drizzle なんかがそう。generate でマイグレーションファイルが生成されるが、これは最新スナップショットとの差分であり、全量のDDLにはならない。&lt;&#x2F;p&gt;
+&lt;p&gt;また、DB上にどこまで適用されているかを保持する必要があり、Drizzle の場合 &lt;code&gt;__drizzle_migrations&lt;&#x2F;code&gt; のようなテーブルが作成される。sql-migrate も同様。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;migrations&#x2F;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;├── 0000_create_users.sql          -- CREATE TABLE users ...&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;├── 0001_add_email_to_users.sql    -- ALTER TABLE users ADD COLUMN email ...&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;├── 0002_create_posts.sql          -- CREATE TABLE posts ...&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;├── 0003_add_index_to_posts.sql    -- CREATE INDEX idx_posts_user_id ...&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;├── 0004_alter_users_add_role.sql  -- ALTER TABLE users ADD COLUMN role ...&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;└── ...                            -- 増え続ける&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;&lt;h2 id=&quot;sqldef-ha&quot;&gt;sqldef は？&lt;&#x2F;h2&gt;
+&lt;p&gt;sqldef は逆に、最新のDDLしか管理しない。DBへの反映時にDDLと現状のDBとの差を適用する形となっている。そのためマイグレーションファイルが増えない。&lt;br &#x2F;&gt;
+これが DDL ベースの自動生成と相性が良く、go の sqlc-gen-crud のような定義から基本の CRUD を自動生成する ORM と組み合わせると捗る。&lt;br &#x2F;&gt;
+DBの状態問わずDDLの状態と合わせにいくので、down migration もソースを revert するだけ。&lt;&#x2F;p&gt;
+&lt;p&gt;その時点のDBとの差分で反映するためDB上の適用状態を考慮する必要がない。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;db&#x2F;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;├── schema.sql        -- 全テーブルの CREATE TABLE（これが唯一の真実）&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;└── query&#x2F;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    ├── users.sql     -- sqlc 用クエリ定義&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    └── posts.sql&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;gen&#x2F;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;├── models.go         -- sqlc が schema.sql から自動生成&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;├── users.crud.go     -- sqlc-gen-crud が自動生成（CRUD）&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;├── posts.crud.go&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;├── users.sql.go      -- sqlc が query&#x2F;*.sql から自動生成&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;└── posts.sql.go&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;DDLのマスタが管理できて、マイグレーション都合の考慮が減るのが良き。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;sonota&quot;&gt;その他&lt;&#x2F;h2&gt;
+&lt;p&gt;そのまま使うとカラム名変更は drop column + add column になるが、これはコメントで補足することで alter 扱いになる。
+&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;sqldef&#x2F;sqldef?tab=readme-ov-file#renaming-tables-columns-and-indexes&quot;&gt;Renaming Tables, Columns, and Indexes&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;ただし、これ使うと適用状態の管理がちょっと煩雑化しそう。複数回の名称変更は避けた方が良さそう。&lt;br &#x2F;&gt;
+そもそも SOLID の考え方上、変更加えるくらいなら、やむを得ない場合を除いてカラム追加して改修し切ってから古いカラム消す方が良さそう。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>Claude 君の所感</title>
+        <published>2026-03-14T00:00:00+00:00</published>
+        <updated>2026-03-14T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260314-with-claude/"/>
+        <id>https://sekky89.github.io/20260314-with-claude/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260314-with-claude/">&lt;p&gt;できるにはできる。任せるには足らず。あくまで2026年3月時点の所感。進化が激しいので半年後には違うこと言ってるかも。&lt;&#x2F;p&gt;
+&lt;p&gt;書いた人の考え方的には、無秩序でブラックボックスがOKになれば良いような、人間が保守することを考えてない生成物は言い方悪いけどゴミだと思ってる。提案時とかで猛スピードでモックアップを作らなければならない状況とかは別にして。&lt;&#x2F;p&gt;
+&lt;p&gt;そんなに使ってないにわかだけど使ってみた所感をメモにしておく。生成 AI の仕組み的なところは詳しくないので触れない。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;claude-jun-toyou-ndemite&quot;&gt;Claude 君と遊んでみて&lt;&#x2F;h2&gt;
+&lt;p&gt;Opus はかなりいい感じ。思慮深さを感じる。要件定義から相談に乗ってくれて、考慮不足や改善点の洗い出しもしてくれる。ただし、トークンはすごい勢いで消える。Pro だと1時間持たない。Sonnet も実装者として過不足ない。&lt;&#x2F;p&gt;
+&lt;p&gt;設計、実装に至るまで、思った以上にちゃんとしたものが出来てくる。もちろん、意図したものが出るように試行錯誤はしたけど。&lt;&#x2F;p&gt;
+&lt;p&gt;こいつらはいい仕事すると思う。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;cursor-tobi-betemite&quot;&gt;Cursor と比べてみて&lt;&#x2F;h2&gt;
+&lt;p&gt;Cursor も使ったことあるけど、Cursor は Auto だとアホすぎて使い物にならないまである。コード補完は優秀だと思うけど、そこも Supermaven とか出てきていることを考えると別にCursor でなくとも良いのでは？と思う部分はある。結局モデルは一緒だし。&lt;&#x2F;p&gt;
+&lt;p&gt;個人的にはエディタ縛られるのがだるい。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;aitoshi-shi-sitemite&quot;&gt;AIと仕事してみて&lt;&#x2F;h2&gt;
+&lt;p&gt;どう使うか次第。ある程度方向性与えないと無秩序なコード吐くのは人間と同じ。方向性を与えてもそれっぽいものが作られているだけで、意図したものになっているかまでは保証できない。生成結果はいくらプロンプト工夫しても不確定なものであることに変わりはない。&lt;&#x2F;p&gt;
+&lt;p&gt;ということを理解した上で、意図したものにするための工夫は必要だと思う。簡単なのは、要件定義→アーキテクチャ枠組作成→テスト作成→実装・テストのようなステップで作らせる。&lt;&#x2F;p&gt;
+&lt;p&gt;要するに、あるべき姿を先に定義して、そこに向かって作らせる。人間の開発プロセスと同じ。TDDでもBDDでも組み合わせるでもいいから、どう動くべきか、どう振る舞うべきかをちゃんと示して作らせる。ここに至って、改善が求められるのは扱う人間。あるべき姿を示せなければろくなものは出てこない。&lt;&#x2F;p&gt;
+&lt;p&gt;AI使って開発してみて、考慮足りていなかった点を洗い出して次のプロセスルールでは改善を加えるという普通の人間のプロジェクトと同じことを超高速サイクルで回していくことになる。１スプリント１時間のスクラム開発しているみたい。SIer の下請けで10人くらいのBPと仕事していた時代を思い出す。&lt;&#x2F;p&gt;
+&lt;p&gt;その中で、レビュー工数を減らすための自動生成ツールの導入や、linter によるコード品質向上などを行えば、人間が読み書きするコードに遜色ないものは作れるし、レビューに耐えないような成果物も出てこない。&lt;&#x2F;p&gt;
+&lt;p&gt;その気になればマルチエージェントで並列作業もできるので本当に猛スピードで開発が進む時代になった。自分が高スキルとは思わんけど低スキルのエンジニアは淘汰されるか、それでも残るマンパワー作業に回ることになりそう。そうならないようにスキルアップし続けないとね。&lt;&#x2F;p&gt;
+&lt;p&gt;総括して、扱う人間のスキルによって AI 生成物の良し悪しは大きく変わる。&lt;&#x2F;p&gt;
+&lt;p&gt;結局、エンジニアがエンジニアであるためには一生学習が必要なことに変わりはない。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;yu-woyan-eba&quot;&gt;欲を言えば&lt;&#x2F;h2&gt;
+&lt;p&gt;今時点での AI の最大の難所はモデルの巨大さ、膨大な演算力を要するところ。それによって個人のPCでは動作が難しく、クラウドサービス依存になっているところ。&lt;&#x2F;p&gt;
+&lt;p&gt;これらが改善するか、ハード面が飛躍的な進化を遂げて個人の端末上で動作するようになればより普及しそう。オンラインサービスであることに難色を示してAI導入が進まない業界はまだあるし。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>neovim (alacritty) をあれこれ弄りつつ透明化する（見た目編）</title>
+        <published>2026-02-15T00:00:00+00:00</published>
+        <updated>2026-02-15T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260215-nvim-awesome/"/>
+        <id>https://sekky89.github.io/20260215-nvim-awesome/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260215-nvim-awesome/">&lt;p&gt;最近 VSCode が重くなることが多くストレス感じるため幾つか移行候補を考えつつ試してみている。エンジニアとしての育ちが eclipse で、 vim 系エディタは最近触り始めたが思ったより快適なので Neovim はかなり良いと思う。今のところ、 zed と neovim がかなり良い感じ。&lt;&#x2F;p&gt;
+&lt;p&gt;ターミナルは &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;alacritty.org&#x2F;&quot;&gt;alacritty&lt;&#x2F;a&gt; を使用する。warp、wezterm も触ったがリッチすぎてターミナルアプリとしては TooMuch なので alacritty にした。&lt;&#x2F;p&gt;
+&lt;p&gt;というわけでざっくり見た目設定。あちこち None を設定しているのは透明化設定。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.cmd.colorscheme(&amp;#39;catppuccin&amp;#39;)&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;WinBar&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;WinBarNC&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;NeoTreeTabInactive&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;NeoTreeTabSeparatorInactive&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;StatusLine&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;StatusLineNC&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;StatusLineFill&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;vim.api.nvim_set_hl(0, &amp;#39;BufferLineFill&amp;#39;, { bg = &amp;#39;none&amp;#39; })&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;プラグインマネージャは lazy を使用。&lt;code&gt;lua&#x2F;plugins&#x2F;colorscheme.lua&lt;&#x2F;code&gt; には以下を仕込んでいる。&lt;code&gt;catppuccin&lt;&#x2F;code&gt; の設定上も各所に透明化を仕込んでいる。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;#39;https:&#x2F;&#x2F;github.com&#x2F;catppuccin&#x2F;nvim.git&amp;#39;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    name = &amp;#39;catppuccin&amp;#39;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    priority = 1000,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    opts = {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      flavour = &amp;#39;mocha&amp;#39;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      transparent_background = true,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      float = { transparent = true, solid = true },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      auto_integrations = true,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;そのまま使用するとターミナルアプリの透明化設定がそのまま適用される。&lt;br &#x2F;&gt;
+&lt;code&gt;alacritty.toml&lt;&#x2F;code&gt; はこんな感じ。blur はオフにしつつ opacity で良い感じに裏側の文字が邪魔にならない程度にうっすら透ける程度に設定。&lt;br &#x2F;&gt;
+ターミナルテーマまで catppuccin かよって感じだけど、個人的には背景色を黒にできれば割と何でもいい。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[general]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;import = [&amp;quot;catppuccin.toml&amp;quot;]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;# import = [&amp;quot;gruvbox_material_hard_dark&amp;quot;]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;# import = [&amp;quot;gruvbox_dark&amp;quot;]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[window]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;dimensions = { columns = 180, lines = 58 }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;position = { x = 0, y = 1000 }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;padding = { x = 8, y = 4 }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;decorations = &amp;quot;Buttonless&amp;quot;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;opacity = 0.8&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;blur = false&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[scrolling]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;history = 100000&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[font]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;normal = { family = &amp;#39;HackGen35 Console NF&amp;#39;, style = &amp;quot;Regular&amp;quot; }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;bold = { family = &amp;quot;HackGen35 Console NF&amp;quot;, style = &amp;quot;Bold&amp;quot; }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;italic = { family = &amp;quot;HackGen35 Console NF&amp;quot;, style = &amp;quot;Italic&amp;quot; }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;bold_italic = { family = &amp;quot;HackGen35 Console NF&amp;quot;, style = &amp;quot;Bold Italic&amp;quot; }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;size = 12&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;offset = { x = 0, y = 2 }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;glyph_offset = { x = 0, y = 1 }&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[colors]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[colors.primary]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;background = &amp;quot;#000000&amp;quot;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[selection]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;save_to_clipboard = true&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[mouse]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;hide_when_typing = true&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;[debug]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>zed の見た目を良い感じにしつつ透明化する</title>
+        <published>2026-02-15T00:00:00+00:00</published>
+        <updated>2026-02-15T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260215-zed-transparency/"/>
+        <id>https://sekky89.github.io/20260215-zed-transparency/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260215-zed-transparency/">&lt;p&gt;エディタの見た目はテンションに直結するので良い感じにしたい。メインのエディタとして使うかは分からないけど使ってみている zed の見た目を良い感じにするメモ。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;zed-industries&#x2F;zed&#x2F;issues&#x2F;5040#issuecomment-2510486980&quot;&gt;参考 GitHub スレッド&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;個人的には &lt;code&gt;blurred&lt;&#x2F;code&gt; でぼかすよりも &lt;code&gt;transparent&lt;&#x2F;code&gt; で背景がうっすら透けて見える方が好き。使用テーマにもよると思うが私のテーマはこれで大体透明になった。(なお、テーマは &lt;code&gt;Catppuccin Mocha&lt;&#x2F;code&gt; を使用)&lt;&#x2F;p&gt;
+&lt;p&gt;本当は &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;marketplace.visualstudio.com&#x2F;items?itemName=Nimda.deepdark-material&quot;&gt;Deepdark Material Theme&lt;&#x2F;a&gt; を zed に port したいが無かったのと、自力で port しようとしたがうまくいかなかったので。（シンタックスハイライトはこれが一番好き）&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;{&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  ..., &#x2F;&#x2F; その他の設定&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;ui_font_weight&amp;quot;: 100.0,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;ui_font_family&amp;quot;: &amp;quot;HackGen35 Console NF&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;vim_mode&amp;quot;: true,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;icon_theme&amp;quot;: &amp;quot;Catppuccin Mocha&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;theme&amp;quot;: &amp;quot;Catppuccin Mocha&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;telemetry&amp;quot;: {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;metrics&amp;quot;: false,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;diagnostics&amp;quot;: false,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;buffer_font_family&amp;quot;: &amp;quot;HackGen35 Console NF&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;ui_font_size&amp;quot;: 14.0,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;buffer_font_size&amp;quot;: 14.0,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  &amp;quot;experimental.theme_overrides&amp;quot;: {&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;background.appearance&amp;quot;: &amp;quot;transparent&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;renamed.background&amp;quot;: &amp;quot;#FFFFFF20&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;search.match_background&amp;quot;: &amp;quot;#FFFFFF20&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;ghost_element.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;ghost_element.hover&amp;quot;: &amp;quot;#00000099&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;background&amp;quot;: &amp;quot;#000000CC&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.gutter.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;title_bar.background&amp;quot;: &amp;quot;#000000DF&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;toolbar.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;terminal.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;status_bar.background&amp;quot;: &amp;quot;#000000DF&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;tab.active_background&amp;quot;: &amp;quot;#000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;tab.inactive_background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;tab_bar.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;panel.background&amp;quot;: &amp;quot;#00000010&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;border&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;border.variant&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.track.border&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.track.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.thumb.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.thumb.hover.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.thumb.active.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;scrollbar.thumb.border&amp;quot;: &amp;quot;#FFFFFF90&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.line_highlight&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.active_line.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.foreground&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.border&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.inactive.foreground&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.inactive.border&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.active.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.active.foreground&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.active.border&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;editor.selection.inactive.background&amp;quot;: &amp;quot;#00000000&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  },&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;}&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>34インチワイドディスプレイを買ってみたが失敗した話(DELL AW3425DW)</title>
+        <published>2026-02-11T00:00:00+00:00</published>
+        <updated>2026-02-11T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260211-34-wide-display/"/>
+        <id>https://sekky89.github.io/20260211-34-wide-display/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260211-34-wide-display/">&lt;p&gt;ディスプレイ買ってみたけど用途と合わなかった話。&lt;&#x2F;p&gt;
+&lt;p&gt;意気込んで買ったのは&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;www.dell.com&#x2F;ja-jp&#x2F;shop&#x2F;alienware-34-240hz-qd-oled%E3%82%B2%E3%83%BC%E3%83%9F%E3%83%B3%E3%82%B0-%E3%83%A2%E3%83%8B%E3%82%BF%E3%83%BC-aw3425dw&#x2F;apd&#x2F;210-brpn&#x2F;%E3%83%A2%E3%83%8B%E3%82%BF%E3%83%BC-%E3%83%A2%E3%83%8B%E3%82%BF%E3%83%BC%E7%94%A8%E5%91%A8%E8%BE%BA%E6%A9%9F%E5%99%A8&quot;&gt;こちら&lt;&#x2F;a&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;27インチ液晶が物足りなくなった &amp;amp; 仕事の Mac が M2 なので2ディスプレイ出力ができない。&lt;br &#x2F;&gt;
+たまにゲームもするし QD-OLED の大型買っちゃおうっていう安直な考え。正直衝動買いだった。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;he-gadamedatutaka&quot;&gt;何がダメだったか&lt;&#x2F;h2&gt;
+&lt;p&gt;このディスプレイは解像度 3440x1440 となっている。要するに縦解像度が 2k 相当。&lt;br &#x2F;&gt;
+Mac だとものすごく文字が滲む。コードエディタで文字が滲むのはただならぬストレス。&lt;br &#x2F;&gt;
+1日の大半が仕事でコードエディタを見ているのにこのストレスは耐えられない。&lt;&#x2F;p&gt;
+&lt;p&gt;Mac の場合、本体も高解像度ディスプレイに対してスケーリングして描画しているので表示が綺麗。&lt;br &#x2F;&gt;
+同様に外部ディスプレイにおいても、高解像度ディスプレイに対してスケーリングする分には比較的滲まずに綺麗に表示できる模様。&lt;&#x2F;p&gt;
+&lt;p&gt;現に、元々使ってた DELL の 4k 液晶ディスプレイは表示解像度 2k 相当で使用していたが滲んだことはない。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;liang-katutadian&quot;&gt;良かった点&lt;&#x2F;h2&gt;
+&lt;p&gt;黒が綺麗。当たり前だけど。映像は美しい。&lt;br &#x2F;&gt;
+あと、実感するほどゲームしてないけどゲームにおける反応速度が良いのは良いところ。&lt;br &#x2F;&gt;
+Windows だったら仕事でも困らなかったかもしれない。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;zong-gua&quot;&gt;総括&lt;&#x2F;h2&gt;
+&lt;p&gt;カタログスペックだけでディスプレイ買うのは良くないんだなと思いました。&lt;br &#x2F;&gt;
+こんなに文字滲むとは思わなかった。&lt;&#x2F;p&gt;
+&lt;p&gt;そういうストレス抱えたくない人は大人しく 4k 以上のディスプレイ買いましょう。懲りずに 32 インチ QD-OLED ディスプレイ買うか検討中。&lt;br &#x2F;&gt;
+高い勉強料だったが仕方ない。買い物下手だと金がいくらあっても足りん🫠&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>go build の引数と docker マルチステージビルド</title>
+        <published>2026-01-31T00:00:00+00:00</published>
+        <updated>2026-01-31T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260131-go-build/"/>
+        <id>https://sekky89.github.io/20260131-go-build/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260131-go-build/">&lt;p&gt;いつも忘れる go build の引数。最近 Go やってないので久々に Go 書きたくなった。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;shellscript&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;GOARCH&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;arm64&lt;&#x2F;span&gt;&lt;span&gt; GOOS&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;linux&lt;&#x2F;span&gt;&lt;span&gt; CGO_ENABLED&lt;&#x2F;span&gt;&lt;span style=&quot;color: #94E2D5;&quot;&gt;=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;0&lt;&#x2F;span&gt;&lt;span style=&quot;color: #89B4FA;font-style: italic;&quot;&gt; go&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt; build -trimpath -ldflags=&amp;#39;-s -w&amp;#39; -o main main.go&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;main と main.go はお好みに書き換える。&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;pointo&quot;&gt;ポイント&lt;&#x2F;h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;CGO_ENABLED=0&lt;&#x2F;code&gt; で静的リンクにする&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;-trimpath&lt;&#x2F;code&gt; はバイナリ内にビルド環境のパス情報が含まれることを抑止&lt;&#x2F;li&gt;
+&lt;li&gt;&lt;code&gt;-ldflags=&#x27;-s -w&#x27;&lt;&#x2F;code&gt; はシンボルテーブルとデバッグ情報を除外&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;本番用 Docker マルチステージビルドは以下。 AWS Lambda 用バイナリをビルドして scratch コンテナに投入している。&lt;br &#x2F;&gt;
+scratch をベースにするのは本番のランタイムに余計なものを一切入れたくないため。そのために &lt;code&gt;GO_ENABLED=0&lt;&#x2F;code&gt; でバイナリからランタイムへの依存を排除している。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;docker&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;FROM&lt;&#x2F;span&gt;&lt;span&gt; golang:1-alpine &lt;&#x2F;span&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;as&lt;&#x2F;span&gt;&lt;span&gt; builder&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;RUN&lt;&#x2F;span&gt;&lt;span&gt; apk update &amp;amp;&amp;amp; apk add --no-cache ca-certificates &amp;amp;&amp;amp; update-ca-certificates&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;WORKDIR&lt;&#x2F;span&gt;&lt;span&gt; &#x2F;app&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; . .&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;RUN&lt;&#x2F;span&gt;&lt;span&gt; GOARCH=arm64 GOOS=linux CGO_ENABLED=0 go build -trimpath -ldflags=&lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;-s -w&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt; -o .&#x2F;bootstrap .&#x2F;main.go&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;FROM&lt;&#x2F;span&gt;&lt;span&gt; scratch&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; --from=builder &#x2F;etc&#x2F;ssl&#x2F;certs&#x2F;ca-certificates.crt &#x2F;etc&#x2F;ssl&#x2F;certs&#x2F;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; --from=builder &#x2F;app&#x2F;bootstrap &#x2F;bootstrap&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;COPY&lt;&#x2F;span&gt;&lt;span&gt; --from=public.ecr.aws&#x2F;awsguru&#x2F;aws-lambda-adapter:0.9.1 &#x2F;lambda-adapter &#x2F;opt&#x2F;extensions&#x2F;lambda-adapter&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;ENV&lt;&#x2F;span&gt;&lt;span&gt; PORT=8000&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;EXPOSE&lt;&#x2F;span&gt;&lt;span&gt; 8000&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span style=&quot;color: #CBA6F7;&quot;&gt;ENTRYPOINT&lt;&#x2F;span&gt;&lt;span&gt; [ &lt;&#x2F;span&gt;&lt;span style=&quot;color: #A6E3A1;&quot;&gt;&amp;quot;&#x2F;bootstrap&amp;quot;&lt;&#x2F;span&gt;&lt;span&gt; ]&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;AWS Lambda Web Adapter も入っているので gin や fiber で作った API サーバをそのまま Lambda に上げられる。Lambda での運用が厳しかった場合は ECS に上げてもそのまま動く。多分。&lt;&#x2F;p&gt;
+&lt;p&gt;ビルドコンテキストが main.go の在処であれば改変不要でそのまま使用できる。はず。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>Zola 始めてみる</title>
+        <published>2025-12-21T00:00:00+00:00</published>
+        <updated>2025-12-21T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20251221-init-zola/"/>
+        <id>https://sekky89.github.io/20251221-init-zola/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20251221-init-zola/">&lt;p&gt;&lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;www.getzola.org&#x2F;&quot;&gt;Zola&lt;&#x2F;a&gt; でページを作ってみました。&lt;br &#x2F;&gt;
+テーマは &lt;a rel=&quot;external&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;st1020&#x2F;kita&quot;&gt;kita&lt;&#x2F;a&gt; を使用しました。&lt;&#x2F;p&gt;
+&lt;p&gt;GitHub Actions Workflow の参考です。ほぼデフォルトで、gh-pages ブランチにビルド成果物が入り、それを公開しています。&lt;br &#x2F;&gt;
+なので、公開パスは &lt;code&gt;gh-pages&lt;&#x2F;code&gt; の &lt;code&gt;&#x2F;(root)&lt;&#x2F;code&gt; となります。GitHub で直接設定している箇所はそれ以外ありません。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;on: push&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;name: Build and deploy GH Pages&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;jobs:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;  build:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    permissions:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      contents: write&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    runs-on: ubuntu-latest&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    if: github.ref == &amp;#39;refs&#x2F;heads&#x2F;main&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    steps:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      - name: checkout&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        uses: actions&#x2F;checkout@v6&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        with:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          submodules: true&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;      - name: build_and_deploy&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        uses: shalzz&#x2F;zola-deploy-action@master&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;        env:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;          TOKEN: ${{ secrets.GITHUB_TOKEN }}&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;設定を確かめて遊ぶ目的なので大した内容が増える見込みはありません。&lt;br &#x2F;&gt;
+メモ置場になる予定です。&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>Amplify Gen2 の依存パッケージを無闇に更新してはいけない</title>
+        <published>2025-07-16T00:00:00+00:00</published>
+        <updated>2025-07-16T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              sekky89
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://sekky89.github.io/20260314-amplify-bump-package-trap/"/>
+        <id>https://sekky89.github.io/20260314-amplify-bump-package-trap/</id>
+        
+        <content type="html" xml:base="https://sekky89.github.io/20260314-amplify-bump-package-trap/">&lt;p&gt;パッケージバージョンを全て最新化するとこのエラーが出る。
+CDK のバージョンに amplify が付いていけてないことがある模様。&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;code&gt;Cloud assembly schema version mismatch: Maximum schema version supported is 44.x.x, but found 45.0.0&lt;&#x2F;code&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;今回は以下で対処。最新は 2.204.0 だがエラーが発生するため以下を指定した。&lt;&#x2F;p&gt;
+&lt;pre class=&quot;giallo&quot; style=&quot;color: #CDD6F4; background-color: #1E1E2E;&quot;&gt;&lt;code data-lang=&quot;plain&quot;&gt;&lt;span class=&quot;giallo-l&quot;&gt;&lt;span&gt;    &amp;quot;aws-cdk-lib&amp;quot;: &amp;quot;2.202.0&amp;quot;,&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;足並み揃えてくれんか・・・？&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;sonota&quot;&gt;その他&lt;&#x2F;h2&gt;
+&lt;p&gt;気が向いたので記事たくさん書いてるけどまたすぐ飽きる気がする。習慣化するのが一番なんだろうけど・・・&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>
