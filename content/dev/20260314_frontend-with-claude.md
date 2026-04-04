@@ -6,7 +6,7 @@ description = "Ox と Bun と React Compiler の時代"
 tags = ["claude", "frontend", "react", "typescript"]
 +++
 
-[バックエンド編](@/20260314_backend-with-claude.md)の続き。フロントエンド側の選定についても書いておく。
+[バックエンド編](@/dev/20260314_backend-with-claude.md)の続き。フロントエンド側の選定についても書いておく。
 
 ## ポリシー
 
