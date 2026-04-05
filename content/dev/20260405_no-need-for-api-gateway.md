@@ -56,3 +56,10 @@ Authorizer
 29秒以内に終わらないリクエストに使用することもできるが、その用途だと際限なさそうなので素直にポーリングした方が良いような気がする。
 
 セキュリティは十分注意が必要。
+
+
+## 参考
+以下の記事参考にさせてもらいました。
+https://serverless.co.jp/blog/5o3au2eyp/
+https://zenn.dev/watany/articles/183d40f8e31a45
+https://qiita.com/bushiyama/items/d40f0941806df1b18995
