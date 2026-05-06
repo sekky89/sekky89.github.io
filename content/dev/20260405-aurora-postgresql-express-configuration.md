@@ -1,6 +1,6 @@
 +++
 title = "Aurora PostgreSQL Express Configuration 試してみた"
-date = "2026-04-05T"
+date = "2026-04-05T19:00:00+09:00"
 description = "起動は速い"
 [taxonomies]
 tags = ["aurora", "postgress", "serverless"]
