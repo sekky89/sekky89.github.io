@@ -1,0 +1,306 @@
+<!doctype html>
+<html class="not-ready lg:text-base overflow-y-scroll scroll-pt-14 scheme-light dark:scheme-dark" lang="en">
+
+<head prefix="og: https://ogp.me/ns# article: https://ogp.me/ns/article#">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="generator" content="Zola v0.21.0" />
+  <title>API Gateway 不要説 | sekky89</title>
+  <meta property="og:site_name" content="sekky89" />
+  <meta property="og:title" content="API Gateway 不要説" />
+  <meta name="description" content="やっぱ不要とは言えない" />
+  <meta property="og:description" content="やっぱ不要とは言えない" />
+  <meta property="og:url" content="https://sekky89.github.io/dev/20260405-no-need-for-api-gateway/" />
+  <link rel="canonical" href="https://sekky89.github.io/dev/20260405-no-need-for-api-gateway/" />
+  <meta property="og:type" content="article" />
+  <meta property="article:published_time" content="2026-04-05T00:00:00+00:00" />
+  <meta property="article:tag" content="aws" />
+  <meta property="article:tag" content="api gateway" />
+  <meta property="article:tag" content="cloudfront" />
+  <meta property="article:tag" content="lambda" />
+  <link rel="alternate" type="application/atom+xml" href="https://sekky89.github.io/atom.xml" title="sekky89 | Atom" />
+  <!-- Begin Head inject -->
+  
+  <!-- End Head inject -->
+  <link rel="stylesheet" href="https://sekky89.github.io/main.min.css?h=78462684530fb1a48e39" />
+  <link rel="stylesheet" href="https://sekky89.github.io/icons.css?h=7dd5ab449fa840fc01e2" />
+  <style>:root{--bg: #f4f4f5; --header: #e4e4e7;} :root.dark{--bg: #18181b; --header: #27272a;}</style>
+  <meta name="theme-color" data-light="#e4e4e7" data-dark="#27272a" content="#e4e4e7" />
+  <link rel="icon" type="image/x-icon" href="https://sekky89.github.io/favicon.ico" />
+  <link rel="apple-touch-icon" type="image/png" href="https://sekky89.github.io/apple-touch-icon.png?h=58bee300054c5308feb3" />
+  <link rel="icon" type="image/png" href="https://sekky89.github.io/android-icon.png?h=8d80ec95446bd2c36826" />
+  <script src="https://sekky89.github.io/js/zola-theme.min.js?h=26975b146d48e6ff41af"></script>
+  <!-- Begin Head End inject -->
+  
+  <!-- End Head End inject -->
+</head>
+
+<body class="text-black duration-100 ease-out dark:text-white">
+  <!-- Header -->
+<header class="header fixed top-0 z-40 mx-auto min-h-13 w-full">
+  <div class="mx-auto w-full max-w-4xl p-2.5 lg:flex lg:justify-between">
+    <div class="flex justify-between">
+      <div class="flex items-center min-h-8 overflow-hidden">
+        <a title="Go to home page [Alt + !]" accesskey="!"
+          href="https://sekky89.github.io/"
+          class="text-2xl font-semibold truncate">sekky89</a>
+        <button type="button" title="Switch color scheme [Alt + $]" accesskey="$"
+          onclick="window.zolaTheme.color.toggle();"
+          class="btn-dark ml-4 h-6 w-6 shrink-0 cursor-pointer text-[0px]
+            bg-center bg-no-repeat bg-cover [background-image:var(--icons-btn-dark,url(icons/btn-dark.svg))]
+            dark:[background-image:var(--icons-btn-light,url(icons/btn-light.svg))] dark:invert"
+        ></button>
+        <button type="button" title="Open search [Alt + /]" accesskey="/"
+          onclick="window.zolaTheme.search.toggle();"
+          class="btn-search ml-4 h-6 w-6 shrink-0 cursor-pointer text-[0px]
+            bg-center bg-no-repeat bg-cover [background-image:var(--icons-search,url(icons/search.svg))] dark:invert"
+        ></button>
+      </div>
+      <div title="Toggle menu [Alt + `+`]" role="button" accesskey="+" tabindex="0"
+        class="btn-menu relative z-50 flex h-8 w-8 shrink-0 cursor-pointer select-none flex-col items-center justify-center gap-2.5 lg:hidden"
+        onclick="window.zolaTheme.menu.toggleHeader();"
+        onkeydown="(event.keyCode == 13 || event.keyCode == 32) ? event.preventDefault() || window.zolaTheme.menu.toggleHeader() : true;"
+      ></div>
+    </div>
+    <nav class="flex w-full items-center lg:w-auto">
+      <menu
+        class="nav-wrapper flex w-full flex-col py-2 lg:w-auto lg:flex-row lg:self-center lg:py-0">
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/projects"
+          >Projects</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/archive"
+          >Archive</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/tags"
+          >Tags</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/about"
+          >About</a>
+        </li>
+      </menu>
+      <!-- Begin Header Nav inject -->
+      
+      <!-- End Header Nav inject -->
+    </nav>
+  </div>
+</header>
+
+  <!-- Begin Body Start inject -->
+  
+  <!-- End Body Start inject -->
+  <main class="prose prose-neutral dark:prose-invert prose-pre:rounded-lg prose-img:rounded-lg
+    relative mx-auto min-h-[calc(100vh-4rem)] max-w-3xl px-4 pt-28 lg:pt-32 pb-12 wrap-break-word">
+      <!-- Search -->
+<div id="linkita-search-wrapper" class="hidden">
+  <ul id="linkita-search-results"></ul>
+</div>
+<script>window.zolaTheme.search.init({ scripts: ["https://sekky89.github.io/elasticlunr.min.js", "https://sekky89.github.io/search_index.en.js"], arg: { w: "#linkita-search-wrapper", r: "#linkita-search-results" } });</script>
+
+    
+<article>
+  <!-- Begin Page Start inject -->
+  
+  <!-- End Page Start inject -->
+
+  <header class="mb-16">
+    <h1 class="my-0! pb-2.5">API Gateway 不要説</h1>
+    <!-- Page Info -->
+<div class="text-sm antialiased opacity-80"><time
+      datetime="2026-04-05T00:00:00+00:00">2026-04-05</time><span
+        class="middot"></span><time
+    datetime="PT0H4M0S">4&nbsp;min</time><span
+      class="middot"></span><span>sekky89</span>
+</div>
+
+  </header>
+  <!-- TOC -->
+<nav class="block-bg prose-a:secondary-link mb-12 rounded-lg p-2 text-lg">
+  <details>
+    <summary class="select-none py-0.5 lg:py-1 pl-3.5" title="[Alt + =]" accesskey="=">
+      <span class="cursor-pointer ml-0.5">Table of Contents</span>
+    </summary>
+    <ul class="ps-8">
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#jie-lun">結論</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#de-rumono">得るもの</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#shi-warerumono">失われるもの</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#ta-nofang-shi-tonobi-jiao">他の方式との比較</a>
+        <ul>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#api-gateway-rest-api-lambda">API Gateway (REST API) + Lambda</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#cloudfront-api-gateway-http-api-lambda">CloudFront + API Gateway (HTTP API) + Lambda</a>
+          </li>
+        </ul>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#shi-isuo">使い所</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#can-kao">参考</a>
+      </li>
+    </ul>
+  </details>
+</nav>
+
+  <!-- Content -->
+  <section><p>CloudFront + Lambda Function URL (OAC) w/Lambda-lith App を試してみた。
+併せて、Aurora PostgreSQL Express Configuration も試したけどそれは別記事で。</p>
+<h2 id="jie-lun">結論</h2>
+<p>できなくはないし、面白いが運用上はリスクが多いため限定的な用途を除いては採用できない。
+ホビー用途なら全部これでも良いけど、セキュリティ気にするならやめた方がいい。</p>
+<h2 id="de-rumono">得るもの</h2>
+<p>API Gateway の制約</p>
+<ul>
+<li>Steram とか Server Sent Event とかが使いやすい</li>
+<li>タイムアウトが Lambda 依存になる
+API Gateway 分のコスト</li>
+<li>API Gateway ないから・・・</li>
+</ul>
+<h2 id="shi-warerumono">失われるもの</h2>
+<p>レート制限</p>
+<ul>
+<li>Lambda の実装に含めればできるけど、そもそも Lambda 実行させたくない
+Authorizer</li>
+<li>同上、アプリ実行前に検証したい</li>
+<li>Cognito Authorizer との組み合わせもアプリ側実装になる (JWT検証とか)
+設定の楽さ</li>
+<li>やろうとすると最低限 CloudFront Function は必須</li>
+<li>その辺の作り込みも含めるとめんどい
+セキュリティ</li>
+<li>認証タイプ NONE : Lambda 実行されてしまう</li>
+<li>認証タイプ AWS_IAM : CloudFront ではリクエストボディを含めた署名ができないためそのままではエラー。<strong>クライアントで <code>x-amz-content-sha256</code> を計算して付加する必要がある。</strong> (ペイロードがでかい場合クライアント負荷が大きくなる。クライアントの時刻同期ずれとかで署名エラー起きそう)
+他色々</li>
+</ul>
+<h2 id="ta-nofang-shi-tonobi-jiao">他の方式との比較</h2>
+<h3 id="api-gateway-rest-api-lambda">API Gateway (REST API) + Lambda</h3>
+<ul>
+<li>古き良きアーキテクチャ。前述の失われるものがない。</li>
+<li>無駄に Lambda が実行されることもない。</li>
+</ul>
+<h3 id="cloudfront-api-gateway-http-api-lambda">CloudFront + API Gateway (HTTP API) + Lambda</h3>
+<ul>
+<li>今の王道はこっちかも。</li>
+<li>CloudFront を経由させることで WAF を適用可能</li>
+<li>SPA もホスティングしている場合、一つの CloudFront + WAF でフロントバック両方守れてお得</li>
+<li>Cognito との連携も JWT Authorizer で容易</li>
+<li>REST API よりは安い</li>
+<li>REST API と同様に、ある程度は API Gateway までで叩き落とせるのでセキュリティも良き。</li>
+</ul>
+<h2 id="shi-isuo">使い所</h2>
+<p>前述の通り、Server-Sent Event や Response Streaming を使用したい場合など、API Gateway の制約に掛かる場合に限定的な用途で使用するのはあり。
+通常は API Gateway (HTTP API) を使用しつつ、一部のエンドポイントだけ Lambda Function URL に流すといった使い方。
+29秒以内に終わらないリクエストに使用することもできるが、その用途だと際限なさそうなので素直にポーリングした方が良いような気がする。</p>
+<p>セキュリティは十分注意が必要。</p>
+<h2 id="can-kao">参考</h2>
+<p>以下の記事参考にさせてもらいました。
+https://serverless.co.jp/blog/5o3au2eyp/
+https://zenn.dev/watany/articles/183d40f8e31a45
+https://qiita.com/bushiyama/items/d40f0941806df1b18995</p>
+</section>
+  <hr />
+  <!-- Post Taxonomies -->
+<footer class="mt-12 flex flex-col" tabindex="-1" accesskey="_">
+  <div class="mb-2 flex flex-wrap">
+    <span class="block-bg mr-1.5 mb-1.5 rounded-lg px-5 py-1.5">Tags</span>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/aws/">aws</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/api-gateway/">api gateway</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/cloudfront/">cloudfront</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/lambda/">lambda</a>
+    
+  </div>
+</footer>
+
+  <!-- Post Nav -->
+<nav class="block-bg mt-12 flex flex-wrap rounded-lg text-lg">
+  <a
+    class="block-hover-mask flex min-w-[50%] grow items-center rounded-l-md p-6 pr-3 font-semibold no-underline"
+    href="https://sekky89.github.io/dev/20260405-aurora-postgresql-express-configuration/" accesskey=","
+    ><span class="mr-1.5">&#8249;</span><span>Aurora PostgreSQL Express Configuration 試してみた</span></a>
+  <a
+    class="block-hover-mask ml-auto flex min-w-[50%] grow items-center justify-end rounded-r-md p-6 pl-3 font-semibold no-underline"
+    href="https://sekky89.github.io/dialy/20260404-self-satisfaction-engineering/" accesskey="."
+    ><span>自己満エンジニアリング</span><span class="ml-1.5">&#8250;</span></a>
+</nav>
+
+  <!-- Begin Page End inject -->
+  
+  <!-- End Page End inject -->
+</article>
+
+  </main>
+  <!-- Footer -->
+<footer class="mx-auto flex lg:mt-5 max-w-3xl flex-wrap items-center px-4 py-3 text-sm opacity-60">
+  <div class="mr-auto basis-full lg:basis-1/2">
+  © <time datetime="2026">2026</time> sekky89
+  </div>
+  <div class="flex basis-full lg:basis-1/2 lg:justify-end">
+    <span class="mr-6 lg:ml-6">
+      <a class="link" href="https://www.getzola.org/" target="_blank">Powered by Zola</a>
+    </span>
+    <a class="link" href="https://www.getzola.org/themes/linkita/" target="_blank">&#9998; Linkita</a>
+  </div>
+  <!-- Begin Footer inject -->
+  
+  <!-- End Footer inject -->
+</footer>
+
+  
+  <link rel="stylesheet" href="https://sekky89.github.io/katex/katex.min.css?h=383e7b8d45a3003d6ca1" />
+  <script defer src="https://sekky89.github.io/katex/katex.min.js?h=5e4f3b03c66a3360fe5c"></script>
+  <script defer src="https://sekky89.github.io/katex/contrib/auto-render.min.js?h=bb53eb953394531aae36"></script>
+  <script>document.addEventListener("DOMContentLoaded", window.zolaTheme.katex.init);</script>
+  <!-- Convert ```mermaid code blocks to mermaid-compatible format -->
+  <script>
+    document.querySelectorAll('pre > code[data-lang="mermaid"]').forEach(function (code) {
+      var pre = code.parentElement;
+      pre.className = "mermaid bg-inherit";
+      pre.removeAttribute("style");
+      pre.setAttribute("translate", "no");
+      pre.textContent = code.textContent;
+    });
+  </script>
+  <!-- Mermaid -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    window.zolaTheme.mermaid.init({ mermaid, s: ".mermaid" });
+  </script>
+
+  <!-- Begin Body End inject -->
+  
+  <!-- End Body End inject -->
+</body>
+
+</html>

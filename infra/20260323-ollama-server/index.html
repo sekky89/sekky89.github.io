@@ -1,0 +1,483 @@
+<!doctype html>
+<html class="not-ready lg:text-base overflow-y-scroll scroll-pt-14 scheme-light dark:scheme-dark" lang="en">
+
+<head prefix="og: https://ogp.me/ns# article: https://ogp.me/ns/article#">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <meta name="generator" content="Zola v0.21.0" />
+  <title>ゲーミングPCをOllamaサーバにする構想 | sekky89</title>
+  <meta property="og:site_name" content="sekky89" />
+  <meta property="og:title" content="ゲーミングPCをOllamaサーバにする構想" />
+  <meta name="description" content="遊休ゲーミングPCと常設Proxmoxサーバで自宅AI開発環境を構築する" />
+  <meta property="og:description" content="遊休ゲーミングPCと常設Proxmoxサーバで自宅AI開発環境を構築する" />
+  <meta property="og:url" content="https://sekky89.github.io/infra/20260323-ollama-server/" />
+  <link rel="canonical" href="https://sekky89.github.io/infra/20260323-ollama-server/" />
+  <meta property="og:type" content="article" />
+  <meta property="article:published_time" content="2026-03-23T00:00:00+00:00" />
+  <meta property="article:tag" content="llm" />
+  <meta property="article:tag" content="ollama" />
+  <meta property="article:tag" content="selfhost" />
+  <meta property="article:tag" content="mattermost" />
+  <meta property="article:tag" content="proxmox" />
+  <meta property="article:tag" content="tailscale" />
+  <link rel="alternate" type="application/atom+xml" href="https://sekky89.github.io/atom.xml" title="sekky89 | Atom" />
+  <!-- Begin Head inject -->
+  
+  <!-- End Head inject -->
+  <link rel="stylesheet" href="https://sekky89.github.io/main.min.css?h=78462684530fb1a48e39" />
+  <link rel="stylesheet" href="https://sekky89.github.io/icons.css?h=7dd5ab449fa840fc01e2" />
+  <style>:root{--bg: #f4f4f5; --header: #e4e4e7;} :root.dark{--bg: #18181b; --header: #27272a;}</style>
+  <meta name="theme-color" data-light="#e4e4e7" data-dark="#27272a" content="#e4e4e7" />
+  <link rel="icon" type="image/x-icon" href="https://sekky89.github.io/favicon.ico" />
+  <link rel="apple-touch-icon" type="image/png" href="https://sekky89.github.io/apple-touch-icon.png?h=58bee300054c5308feb3" />
+  <link rel="icon" type="image/png" href="https://sekky89.github.io/android-icon.png?h=8d80ec95446bd2c36826" />
+  <script src="https://sekky89.github.io/js/zola-theme.min.js?h=26975b146d48e6ff41af"></script>
+  <!-- Begin Head End inject -->
+  
+  <!-- End Head End inject -->
+</head>
+
+<body class="text-black duration-100 ease-out dark:text-white">
+  <!-- Header -->
+<header class="header fixed top-0 z-40 mx-auto min-h-13 w-full">
+  <div class="mx-auto w-full max-w-4xl p-2.5 lg:flex lg:justify-between">
+    <div class="flex justify-between">
+      <div class="flex items-center min-h-8 overflow-hidden">
+        <a title="Go to home page [Alt + !]" accesskey="!"
+          href="https://sekky89.github.io/"
+          class="text-2xl font-semibold truncate">sekky89</a>
+        <button type="button" title="Switch color scheme [Alt + $]" accesskey="$"
+          onclick="window.zolaTheme.color.toggle();"
+          class="btn-dark ml-4 h-6 w-6 shrink-0 cursor-pointer text-[0px]
+            bg-center bg-no-repeat bg-cover [background-image:var(--icons-btn-dark,url(icons/btn-dark.svg))]
+            dark:[background-image:var(--icons-btn-light,url(icons/btn-light.svg))] dark:invert"
+        ></button>
+        <button type="button" title="Open search [Alt + /]" accesskey="/"
+          onclick="window.zolaTheme.search.toggle();"
+          class="btn-search ml-4 h-6 w-6 shrink-0 cursor-pointer text-[0px]
+            bg-center bg-no-repeat bg-cover [background-image:var(--icons-search,url(icons/search.svg))] dark:invert"
+        ></button>
+      </div>
+      <div title="Toggle menu [Alt + `+`]" role="button" accesskey="+" tabindex="0"
+        class="btn-menu relative z-50 flex h-8 w-8 shrink-0 cursor-pointer select-none flex-col items-center justify-center gap-2.5 lg:hidden"
+        onclick="window.zolaTheme.menu.toggleHeader();"
+        onkeydown="(event.keyCode == 13 || event.keyCode == 32) ? event.preventDefault() || window.zolaTheme.menu.toggleHeader() : true;"
+      ></div>
+    </div>
+    <nav class="flex w-full items-center lg:w-auto">
+      <menu
+        class="nav-wrapper flex w-full flex-col py-2 lg:w-auto lg:flex-row lg:self-center lg:py-0">
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/projects"
+          >Projects</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/archive"
+          >Archive</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/tags"
+          >Tags</a>
+        </li>
+        <li>
+          <a
+            class="primary-link block py-2 text-center text-lg font-medium lg:px-3 lg:py-0"
+            href="https://sekky89.github.io/about"
+          >About</a>
+        </li>
+      </menu>
+      <!-- Begin Header Nav inject -->
+      
+      <!-- End Header Nav inject -->
+    </nav>
+  </div>
+</header>
+
+  <!-- Begin Body Start inject -->
+  
+  <!-- End Body Start inject -->
+  <main class="prose prose-neutral dark:prose-invert prose-pre:rounded-lg prose-img:rounded-lg
+    relative mx-auto min-h-[calc(100vh-4rem)] max-w-3xl px-4 pt-28 lg:pt-32 pb-12 wrap-break-word">
+      <!-- Search -->
+<div id="linkita-search-wrapper" class="hidden">
+  <ul id="linkita-search-results"></ul>
+</div>
+<script>window.zolaTheme.search.init({ scripts: ["https://sekky89.github.io/elasticlunr.min.js", "https://sekky89.github.io/search_index.en.js"], arg: { w: "#linkita-search-wrapper", r: "#linkita-search-results" } });</script>
+
+    
+<article>
+  <!-- Begin Page Start inject -->
+  
+  <!-- End Page Start inject -->
+
+  <header class="mb-16">
+    <h1 class="my-0! pb-2.5">ゲーミングPCをOllamaサーバにする構想</h1>
+    <!-- Page Info -->
+<div class="text-sm antialiased opacity-80"><time
+      datetime="2026-03-23T00:00:00+00:00">2026-03-23</time><span
+        class="middot"></span><time
+    datetime="PT0H7M0S">7&nbsp;min</time><span
+      class="middot"></span><span>sekky89</span>
+</div>
+
+  </header>
+  <!-- TOC -->
+<nav class="block-bg prose-a:secondary-link mb-12 rounded-lg p-2 text-lg">
+  <details>
+    <summary class="select-none py-0.5 lg:py-1 pl-3.5" title="[Alt + =]" accesskey="=">
+      <span class="cursor-pointer ml-0.5">Table of Contents</span>
+    </summary>
+    <ul class="ps-8">
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#motibesiyon">モチベーション</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#quan-ti-gou-cheng">全体構成</a>
+        <ul>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#yi-ge-fen-dan">役割分担</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#naze-vm-dehanaku-lxc-docker-tailscale-ka">なぜ VM ではなく LXC + Docker Tailscale か</a>
+          </li>
+        </ul>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#ren-jian-jie-ru-huro">人間介入フロー</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#naze-mattermost-ka">なぜ Mattermost か</a>
+        <ul>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#edition-xuan-ding">Edition 選定</a>
+          </li>
+        </ul>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#netutowakugou-cheng">ネットワーク構成</a>
+        <ul>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#tailscale">Tailscale</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#coredns">CoreDNS</a>
+          </li>
+        </ul>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#setutoatupu-yu-ding">セットアップ（予定）</a>
+        <ul>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#gemingupc-windows">ゲーミングPC（Windows）</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#chang-she-saba-proxmox-almalinux-lxc">常設サーバ（Proxmox + AlmaLinux LXC）</a>
+          </li>
+          <li class="ps-0.5">
+            <a class="no-underline hover:underline" href="#kuraiantoce-mac">クライアント側（Mac）</a>
+          </li>
+        </ul>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#qwen3-5-nituite">qwen3.5 について</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#qi-ninatuteirukoto">気になっていること</a>
+      </li>
+      <li class="ps-0.5">
+        <a class="no-underline hover:underline" href="#duan-jie-de-nijin-meru">段階的に進める</a>
+      </li>
+    </ul>
+  </details>
+</nav>
+
+  <!-- Content -->
+  <section><p>最近ゲームしなくなった自宅のゲーミングPC（Ryzen 9800X3D / 64GB RAM / RTX 3080）がただの文鎮と化しているので、Ollamaサーバにして開発用に使えないかという構想メモ。</p>
+<h2 id="motibesiyon">モチベーション</h2>
+<ul>
+<li>Claude Code で設計・検討した内容の実装作業を、ローカル LLM + aider に任せたい</li>
+<li>Claude は思考・設計が得意、実装の手を動かす部分はローカルで十分なケースがある</li>
+<li>設計は Claude、実装は aider（ローカルLLM）という分業でAPI費用を抑えられる</li>
+<li>RTX 3080 (VRAM 10GB) が遊んでるのはもったいない</li>
+</ul>
+<h2 id="quan-ti-gou-cheng">全体構成</h2>
+<pre class="giallo" style="color: #CDD6F4; background-color: #1E1E2E;"><code data-lang="plain"><span class="giallo-l"><span>                        Tailscale ネットワーク</span></span>
+<span class="giallo-l"><span>                     (CoreDNS で内部名前解決)</span></span>
+<span class="giallo-l"><span>                               |</span></span>
+<span class="giallo-l"><span>        +----------------------+----------------------+</span></span>
+<span class="giallo-l"><span>        |                      |                      |</span></span>
+<span class="giallo-l"><span>  [MacBook]           [ゲーミングPC]          [常設サーバ]</span></span>
+<span class="giallo-l"><span>   Claude Code         Windows                Ryzen 5700G / 64GB</span></span>
+<span class="giallo-l"><span>   aider               Ollama + qwen3.5       Proxmox</span></span>
+<span class="giallo-l"><span>                        (GPU: RTX 3080)          |</span></span>
+<span class="giallo-l"><span>                                            [AlmaLinux LXC]</span></span>
+<span class="giallo-l"><span>                                              Docker</span></span>
+<span class="giallo-l"><span>                                                ├ Tailscale (userspace)</span></span>
+<span class="giallo-l"><span>                                                ├ Mattermost (Team Edition)</span></span>
+<span class="giallo-l"><span>                                                ├ CoreDNS</span></span>
+<span class="giallo-l"><span>                                                ├ aider Bot</span></span>
+<span class="giallo-l"><span>                                                └ (その他コンテナ)</span></span></code></pre><h3 id="yi-ge-fen-dan">役割分担</h3>
+<table><thead><tr><th>マシン</th><th>役割</th><th>特徴</th></tr></thead><tbody>
+<tr><td>MacBook</td><td>設計・指示</td><td>Claude Code で設計、aider で直接実装も可</td></tr>
+<tr><td>ゲーミングPC</td><td>GPU推論</td><td>Ollama 専用。必要な時だけ WoL で起動</td></tr>
+<tr><td>常設サーバ</td><td>インフラ基盤</td><td>常時起動。Mattermost, DNS, Bot 等を集約</td></tr>
+</tbody></table>
+<p>ゲーミングPC に全部載せない理由:</p>
+<ul>
+<li>ゲーミングPC は電気食うので常時起動したくない（WoL で必要な時だけ）</li>
+<li>Mattermost や Bot は常時起動が前提のサービス</li>
+<li>常設サーバ（Ryzen 5700G）は省電力で24/365回せる</li>
+</ul>
+<h3 id="naze-vm-dehanaku-lxc-docker-tailscale-ka">なぜ VM ではなく LXC + Docker Tailscale か</h3>
+<p>常設サーバ側の AlmaLinux は VM ではなく LXC コンテナで動かす。リソースオーバーヘッドを最小限にするため。</p>
+<p>LXC 上で Tailscale を動かすには TUN デバイスの問題がある（LXC はデフォルトで <code>/dev/net/tun</code> にアクセスできない）が、Tailscale を Docker コンテナとして動かし <code>TS_USERSPACE=true</code>（userspace networking mode）を使うことで回避する。</p>
+<p>userspace mode の制約（subnet routing 不可、パフォーマンス低下）は今回の用途では影響しない:</p>
+<ul>
+<li>subnet routing → 不要。LXC 自身のサービスにアクセスするだけ</li>
+<li>パフォーマンス → Mattermost のテキストと Ollama API コール程度なので問題なし</li>
+</ul>
+<p>Tailscale も含めて全サービスが docker-compose.yml に収まるため、環境依存性が低くポータビリティも高い。</p>
+<h2 id="ren-jian-jie-ru-huro">人間介入フロー</h2>
+<p>メッセージングツールを挟む最大の利点は「人間がゲートになれる」こと。</p>
+<pre class="giallo" style="color: #CDD6F4; background-color: #1E1E2E;"><code data-lang="plain"><span class="giallo-l"><span>Claude Code → Mattermost #design に設計投稿</span></span>
+<span class="giallo-l"><span>                      ↓</span></span>
+<span class="giallo-l"><span>                スマホに通知</span></span>
+<span class="giallo-l"><span>                      ↓</span></span>
+<span class="giallo-l"><span>            人間がレビュー・承認</span></span>
+<span class="giallo-l"><span>           （リアクション or コメント）</span></span>
+<span class="giallo-l"><span>                      ↓</span></span>
+<span class="giallo-l"><span>          aider Bot が承認を検知</span></span>
+<span class="giallo-l"><span>       Ollama (ゲーミングPC) に推論リクエスト</span></span>
+<span class="giallo-l"><span>                      ↓</span></span>
+<span class="giallo-l"><span>           aider + qwen3.5 で実装</span></span>
+<span class="giallo-l"><span>                      ↓</span></span>
+<span class="giallo-l"><span>         Mattermost #review に diff 投稿</span></span>
+<span class="giallo-l"><span>                      ↓</span></span>
+<span class="giallo-l"><span>                スマホに通知</span></span>
+<span class="giallo-l"><span>                      ↓</span></span>
+<span class="giallo-l"><span>             人間が確認して判断</span></span></code></pre>
+<p>出先からスマホで設計をレビューして、OKならリアクション一つで実装が走る。</p>
+<h2 id="naze-mattermost-ka">なぜ Mattermost か</h2>
+<p>セルフホスト可能な候補:</p>
+<table><thead><tr><th>ツール</th><th>Bot API</th><th>Docker</th><th>スマホアプリ</th></tr></thead><tbody>
+<tr><td><strong>Mattermost</strong></td><td>Webhook + Bot SDK</td><td>公式イメージ</td><td>iOS / Android</td></tr>
+<tr><td>Rocket.Chat</td><td>REST API + Bot</td><td>公式イメージ</td><td>iOS / Android</td></tr>
+<tr><td>Zulip</td><td>Bot framework</td><td>公式イメージ</td><td>iOS / Android</td></tr>
+<tr><td>Matrix (Element)</td><td>Bot SDK</td><td>Synapse</td><td>iOS / Android</td></tr>
+</tbody></table>
+<p>正直どれでも実現できるが、Mattermost は Webhook の作りやすさと Bot SDK のドキュメントの充実度で選定。</p>
+<h3 id="edition-xuan-ding">Edition 選定</h3>
+<table><thead><tr><th></th><th>Team Edition (MIT OSS)</th><th>Enterprise Edition Entry モード</th></tr></thead><tbody>
+<tr><td>費用</td><td>無料</td><td>無料（ライセンスキー不要）</td></tr>
+<tr><td>メッセージ履歴</td><td><strong>制限なし</strong></td><td>サーバー全体で10,000件</td></tr>
+<tr><td>プッシュ通知</td><td>TPNS（SLAなし）</td><td>月10,000件</td></tr>
+<tr><td>Bot / Webhook</td><td>使える</td><td>使える</td></tr>
+<tr><td>スマホアプリ</td><td>使える</td><td>使える</td></tr>
+<tr><td>SSO</td><td><strong>なし（2025年以降削除）</strong></td><td>あり</td></tr>
+</tbody></table>
+<p><strong>Team Edition を採用。</strong> Enterprise Entry はメッセージ10,000件制限があり、Bot の diff 出力を流し続けるとすぐ到達する。SSO がないが個人1人なので問題なし。</p>
+<h2 id="netutowakugou-cheng">ネットワーク構成</h2>
+<h3 id="tailscale">Tailscale</h3>
+<p>全マシンを Tailscale で接続。外部にポートを開けない。</p>
+<ul>
+<li>MacBook ↔ 常設サーバ: Claude Code → Mattermost (8065/tcp)</li>
+<li>MacBook ↔ ゲーミングPC: aider → Ollama (11434/tcp)</li>
+<li>常設サーバ ↔ ゲーミングPC: aider Bot → Ollama (11434/tcp)</li>
+</ul>
+<p>常設サーバ側は Tailscale を Docker コンテナとして動かし、<code>network_mode: "service:tailscale"</code> で他のコンテナがそのネットワークスタックを共有する。</p>
+<h3 id="coredns">CoreDNS</h3>
+<p>Tailscale の IP を直打ちするのは辛いので、CoreDNS で内部名前解決する。</p>
+<pre class="giallo" style="color: #CDD6F4; background-color: #1E1E2E;"><code data-lang="plain"><span class="giallo-l"><span>ollama.home.arpa  → ゲーミングPC の Tailscale IP</span></span>
+<span class="giallo-l"><span>mattermost.home.arpa → 常設サーバの Tailscale IP</span></span></code></pre>
+<p>CoreDNS も同じ docker-compose 内で動かす。Tailscale の MagicDNS でも良いが、自前で管理したい場合は CoreDNS が柔軟。</p>
+<h2 id="setutoatupu-yu-ding">セットアップ（予定）</h2>
+<h3 id="gemingupc-windows">ゲーミングPC（Windows）</h3>
+<p>Ollama 専用。GPU推論だけやる。</p>
+<ol>
+<li>NVIDIA ドライバを最新に</li>
+<li>Ollama for Windows をインストール</li>
+<li>Tailscale をインストール</li>
+<li>Ollama のリッスンアドレスを変更</li>
+</ol>
+<pre class="giallo" style="color: #CDD6F4; background-color: #1E1E2E;"><code data-lang="powershell"><span class="giallo-l"><span style="color: #9399B2;">[</span><span style="color: #CBA6F7;">System.Environment</span><span style="color: #9399B2;">]</span><span>::SetEnvironmentVariable</span><span style="color: #9399B2;">(</span><span style="color: #A6E3A1;">&quot;OLLAMA_HOST&quot;</span><span style="color: #94E2D5;">,</span><span style="color: #A6E3A1;"> &quot;0.0.0.0&quot;</span><span style="color: #94E2D5;">,</span><span style="color: #A6E3A1;"> &quot;Machine&quot;</span><span style="color: #9399B2;">)</span></span></code></pre>
+<ol start="5">
+<li>qwen3.5 を pull</li>
+</ol>
+<pre class="giallo" style="color: #CDD6F4; background-color: #1E1E2E;"><code data-lang="shellscript"><span class="giallo-l"><span style="color: #89B4FA;font-style: italic;">ollama</span><span style="color: #A6E3A1;"> pull qwen3.5</span></span></code></pre><h3 id="chang-she-saba-proxmox-almalinux-lxc">常設サーバ（Proxmox + AlmaLinux LXC）</h3>
+<p>Mattermost, CoreDNS, Tailscale, Bot 等の常駐サービスを集約。全て Docker コンテナとして動かす。</p>
+<ol>
+<li>Proxmox 上に AlmaLinux LXC を作成（nesting=1 を有効化）</li>
+<li>Docker + Docker Compose をインストール</li>
+<li>各コンテナを起動</li>
+</ol>
+<pre class="giallo" style="color: #CDD6F4; background-color: #1E1E2E;"><code data-lang="yaml"><span class="giallo-l"><span style="color: #9399B2;font-style: italic;"># docker-compose.yml</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">services</span><span style="color: #94E2D5;">:</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">  tailscale</span><span style="color: #94E2D5;">:</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    image</span><span style="color: #94E2D5;">:</span><span style="color: #A6E3A1;"> tailscale/tailscale</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    hostname</span><span style="color: #94E2D5;">:</span><span style="color: #A6E3A1;"> homelab</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    environment</span><span style="color: #94E2D5;">:</span></span>
+<span class="giallo-l"><span style="color: #9399B2;">      -</span><span style="color: #A6E3A1;"> TS_AUTHKEY=${TS_AUTHKEY}</span></span>
+<span class="giallo-l"><span style="color: #9399B2;">      -</span><span style="color: #A6E3A1;"> TS_STATE_DIR=/var/lib/tailscale</span></span>
+<span class="giallo-l"><span style="color: #9399B2;">      -</span><span style="color: #A6E3A1;"> TS_USERSPACE=true</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    volumes</span><span style="color: #94E2D5;">:</span></span>
+<span class="giallo-l"><span style="color: #9399B2;">      -</span><span style="color: #A6E3A1;"> ./tailscale:/var/lib/tailscale</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    ports</span><span style="color: #94E2D5;">:</span></span>
+<span class="giallo-l"><span style="color: #9399B2;">      -</span><span style="color: #A6E3A1;"> &quot;8065:8065&quot;</span></span>
+<span class="giallo-l"><span style="color: #9399B2;">      -</span><span style="color: #A6E3A1;"> &quot;53:53/udp&quot;</span></span>
+<span class="giallo-l"><span style="color: #9399B2;">      -</span><span style="color: #A6E3A1;"> &quot;53:53/tcp&quot;</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    restart</span><span style="color: #94E2D5;">:</span><span style="color: #A6E3A1;"> unless-stopped</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span style="color: #89B4FA;">  mattermost</span><span style="color: #94E2D5;">:</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    image</span><span style="color: #94E2D5;">:</span><span style="color: #A6E3A1;"> mattermost/mattermost-team-edition</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    network_mode</span><span style="color: #94E2D5;">:</span><span style="color: #A6E3A1;"> &quot;service:tailscale&quot;</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    volumes</span><span style="color: #94E2D5;">:</span></span>
+<span class="giallo-l"><span style="color: #9399B2;">      -</span><span style="color: #A6E3A1;"> ./mattermost/data:/mattermost/data</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    restart</span><span style="color: #94E2D5;">:</span><span style="color: #A6E3A1;"> unless-stopped</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span style="color: #89B4FA;">  coredns</span><span style="color: #94E2D5;">:</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    image</span><span style="color: #94E2D5;">:</span><span style="color: #A6E3A1;"> coredns/coredns</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    network_mode</span><span style="color: #94E2D5;">:</span><span style="color: #A6E3A1;"> &quot;service:tailscale&quot;</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    volumes</span><span style="color: #94E2D5;">:</span></span>
+<span class="giallo-l"><span style="color: #9399B2;">      -</span><span style="color: #A6E3A1;"> ./coredns:/etc/coredns</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    command</span><span style="color: #94E2D5;">:</span><span style="color: #A6E3A1;"> -conf /etc/coredns/Corefile</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;">    restart</span><span style="color: #94E2D5;">:</span><span style="color: #A6E3A1;"> unless-stopped</span></span>
+<span class="giallo-l"></span>
+<span class="giallo-l"><span style="color: #9399B2;font-style: italic;">  # aider Bot（要自作）</span></span>
+<span class="giallo-l"><span style="color: #9399B2;font-style: italic;">  # Mattermost の Webhook を監視して</span></span>
+<span class="giallo-l"><span style="color: #9399B2;font-style: italic;">  # Ollama (ゲーミングPC) に推論リクエストを投げる</span></span></code></pre><h3 id="kuraiantoce-mac">クライアント側（Mac）</h3>
+<pre class="giallo" style="color: #CDD6F4; background-color: #1E1E2E;"><code data-lang="shellscript"><span class="giallo-l"><span style="color: #9399B2;font-style: italic;"># 直接 aider を使う場合</span></span>
+<span class="giallo-l"><span style="color: #CBA6F7;">export</span><span> OLLAMA_API_BASE</span><span style="color: #94E2D5;">=</span><span>http://ollama.home.arpa:11434</span></span>
+<span class="giallo-l"><span style="color: #89B4FA;font-style: italic;">aider</span><span style="color: #A6E3A1;"> --model ollama/qwen3.5</span></span></code></pre>
+<p>Claude Code からは MCP サーバ経由で Mattermost に投稿する構成も考えられる。</p>
+<h2 id="qwen3-5-nituite">qwen3.5 について</h2>
+<p>RTX 3080 の VRAM 10GB で動くサイズが出ているかは要確認。
+aider の実装作業者として使う場合、設計ドキュメントへの指示追従性が重要。実際に試してみるしかない。</p>
+<h2 id="qi-ninatuteirukoto">気になっていること</h2>
+<ul>
+<li><strong>ゲーミングPC の電気代</strong>。WoL で必要な時だけ起動したい
+<ul>
+<li>常設サーバの aider Bot から WoL パケットを飛ばせば良い</li>
+<li>「承認されたら WoL → Ollama 起動確認 → aider 実行 → 完了後シャットダウン」の自動化</li>
+</ul>
+</li>
+<li><strong>qwen3.5 の VRAM 要件</strong>。10GB に収まるサイズ・量子化があるか</li>
+<li><strong>aider との相性</strong>。OpenAI互換APIで繋がるはずだが、モデルごとの癖がある</li>
+<li><strong>LXC + Docker の安定性</strong>。nesting=1 での Docker 動作に問題が出ないか</li>
+</ul>
+<h2 id="duan-jie-de-nijin-meru">段階的に進める</h2>
+<ol>
+<li>まず Ollama + qwen3.5 をゲーミングPC（Windows）に入れて動作確認</li>
+<li>Tailscale 経由で Mac の aider から繋いでみる</li>
+<li>ファイルベースの受け渡し（設計.md → aider --read）で分業を試す</li>
+<li>常設サーバに AlmaLinux LXC を作成、Docker 環境を構築</li>
+<li>Tailscale + Mattermost Team Edition + CoreDNS をコンテナで立てる</li>
+<li>aider Bot を開発して Mattermost 連携</li>
+<li>スマホからレビュー・承認のフローを構築</li>
+<li>WoL 自動化（承認 → 起動 → 実行 → シャットダウン）</li>
+</ol>
+<p>いきなり全部組むと辛いので、小さく始めて段階的に。</p>
+<hr />
+<p>というアイデアベースの構想を Claude にまとめてもらった。
+作ってどの程度仕事してくれるか見てみようかな。</p>
+</section>
+  <hr />
+  <!-- Post Taxonomies -->
+<footer class="mt-12 flex flex-col" tabindex="-1" accesskey="_">
+  <div class="mb-2 flex flex-wrap">
+    <span class="block-bg mr-1.5 mb-1.5 rounded-lg px-5 py-1.5">Tags</span>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/llm/">llm</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/ollama/">ollama</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/selfhost/">selfhost</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/mattermost/">mattermost</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/proxmox/">proxmox</a>
+    
+    <a
+      class="block-bg block-hover mr-1.5 mb-1.5 rounded-lg px-5 py-1.5 no-underline"
+      href="https://sekky89.github.io/tags/tailscale/">tailscale</a>
+    
+  </div>
+</footer>
+
+  <!-- Post Nav -->
+<nav class="block-bg mt-12 flex flex-wrap rounded-lg text-lg">
+  <a
+    class="block-hover-mask flex min-w-[50%] grow items-center rounded-l-md p-6 pr-3 font-semibold no-underline"
+    href="https://sekky89.github.io/dev/20260402-rds-service-link-roke-not-found/" accesskey=","
+    ><span class="mr-1.5">&#8249;</span><span>RDS のサービスリンクロールがなかった話</span></a>
+  <a
+    class="block-hover-mask ml-auto flex min-w-[50%] grow items-center justify-end rounded-r-md p-6 pl-3 font-semibold no-underline"
+    href="https://sekky89.github.io/tools/20260320-orbstack/" accesskey="."
+    ><span>Orbstack 良さそう</span><span class="ml-1.5">&#8250;</span></a>
+</nav>
+
+  <!-- Begin Page End inject -->
+  
+  <!-- End Page End inject -->
+</article>
+
+  </main>
+  <!-- Footer -->
+<footer class="mx-auto flex lg:mt-5 max-w-3xl flex-wrap items-center px-4 py-3 text-sm opacity-60">
+  <div class="mr-auto basis-full lg:basis-1/2">
+  © <time datetime="2026">2026</time> sekky89
+  </div>
+  <div class="flex basis-full lg:basis-1/2 lg:justify-end">
+    <span class="mr-6 lg:ml-6">
+      <a class="link" href="https://www.getzola.org/" target="_blank">Powered by Zola</a>
+    </span>
+    <a class="link" href="https://www.getzola.org/themes/linkita/" target="_blank">&#9998; Linkita</a>
+  </div>
+  <!-- Begin Footer inject -->
+  
+  <!-- End Footer inject -->
+</footer>
+
+  
+  <link rel="stylesheet" href="https://sekky89.github.io/katex/katex.min.css?h=383e7b8d45a3003d6ca1" />
+  <script defer src="https://sekky89.github.io/katex/katex.min.js?h=5e4f3b03c66a3360fe5c"></script>
+  <script defer src="https://sekky89.github.io/katex/contrib/auto-render.min.js?h=bb53eb953394531aae36"></script>
+  <script>document.addEventListener("DOMContentLoaded", window.zolaTheme.katex.init);</script>
+  <!-- Convert ```mermaid code blocks to mermaid-compatible format -->
+  <script>
+    document.querySelectorAll('pre > code[data-lang="mermaid"]').forEach(function (code) {
+      var pre = code.parentElement;
+      pre.className = "mermaid bg-inherit";
+      pre.removeAttribute("style");
+      pre.setAttribute("translate", "no");
+      pre.textContent = code.textContent;
+    });
+  </script>
+  <!-- Mermaid -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    window.zolaTheme.mermaid.init({ mermaid, s: ".mermaid" });
+  </script>
+
+  <!-- Begin Body End inject -->
+  
+  <!-- End Body End inject -->
+</body>
+
+</html>
